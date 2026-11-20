@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Осадки PARDIG: Ташкент и Чимган</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A7%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  /* Значения оформления, которые на claude.ai задаёт движок дашбордов */
+  :root {
+    --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
+    --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+    --cds-radius: 8px; --cds-font-weight-medium: 500;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
+    --cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    color-scheme: dark; background: #0b1219;
+  }
+  html, body { margin: 0; background: #0b1219; }
+  #dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
+    appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+  .dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
+  @keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  @media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
+  a { color: #81cffe; }
+</style>
+</head>
+<body>
+<div id="dash-root">
+<style>
+  /* Тёмная страница в одном стиле с дашбордами WeatherNext и ECMWF: одинаково при любой теме приложения. */
+  #dash-root { --dash-gutter: 0; }
+  .pd {
+    --color-fg: #f0efec; --color-fg-muted: #9aa3ad; --color-bg: #0b1219; --color-panel: #15202b; --color-border-line: #2a3644;
+    --color-ok: #2fbf71; --cds-text-secondary: #9aa3ad; --cds-chart-grid: #1f2b38; --cds-chart-axis: #4a5868; --cds-chart-reference: #56677a;
+    --cds-surface-popover: #1b2835; --cds-border: #33414f; --cds-shadow-popover: 0 4px 14px rgba(0, 0, 0, .5);
+    --c-bar: #2f7fe8; --c-int: #81cffe; --c-cum: #edddb6; --c-band: rgba(129, 207, 254, .10); --c-haz: #ff8a5c;
+    color-scheme: dark; background: var(--color-bg); color: var(--color-fg);
+    padding-block: var(--cds-pad-lg); padding-left: max(16px, var(--cds-pad-lg)); padding-right: max(16px, var(--cds-pad-lg));
+    display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+  .pd:not(.pd-en) [data-l="en"] { display: none !important; }
+  .pd.pd-en [data-l="ru"] { display: none !important; }
+  .pd .dash-select { background-color: var(--color-panel); color: var(--color-fg); border-color: var(--color-border-line);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d6dee6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 12px 8px; max-width: 100%; }
+  .pd-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+  .pd-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--cds-gap-md); }
+  .pd-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .pd-lead { font-size: var(--cds-font-size-heading); line-height: 1.45; margin: 0; max-width: 70ch; }
+  .pd-lead b { font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .pd-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; line-height: 1.6; }
+  .pd-lang, .pd-seg { display: inline-flex; flex-shrink: 0; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; }
+  .pd-lang button, .pd-seg button { font: inherit; font-size: var(--cds-font-size-caption); padding: 4px 13px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
+  .pd-lang button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); font-weight: var(--cds-font-weight-medium); }
+  .pd-seg button[aria-pressed="true"] { background: #81cffe; color: #0b1219; font-weight: var(--cds-font-weight-medium); }
+  .pd button:focus-visible, .pd-dc:focus-visible { outline: 2px solid #81cffe; outline-offset: 2px; }
+  .pd-row { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .pd-lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-pill-stale { font-size: var(--cds-font-size-caption); border-radius: 999px; padding: 2px 10px; color: #1a1406; background: #e0c050; font-weight: var(--cds-font-weight-medium); }
+  .pd-sec { display: flex; flex-direction: column; gap: var(--cds-gap-md); min-width: 0; }
+  .pd-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .pd-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .pd-sub { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin: 0; max-width: 75ch; line-height: 1.5; }
+  /* Итоги */
+  .pd-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--cds-gap-md); }
+  .pd-kpi { padding: var(--cds-pad-md) var(--cds-pad-lg); display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    background: linear-gradient(180deg, #1f3042 0%, #131e28 100%); border: 1px solid #2f4052; border-radius: calc(var(--cds-radius) + 4px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 10px 22px -10px rgba(0, 0, 0, .8), 0 2px 4px rgba(0, 0, 0, .35); }
+  .pd-kpi:hover { border-color: #4a5e72; }
+  @media (prefers-reduced-motion: no-preference) { .pd-kpi { transition: transform var(--cds-dur-slow) var(--cds-ease-out); } .pd-kpi:hover { transform: translateY(-2px); } }
+  .pd-kpi-l { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-kpi-v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.1; }
+  .pd-kpi-u { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin-left: 4px; font-family: var(--font-anthropic-sans); }
+  .pd-kpi-n { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  /* Интенсивные осадки */
+  .pd-hz { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
+  .pd-hz-pill { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--cds-font-size-body); color: #1a0d06; background: var(--c-haz); border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .pd-hz-none { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-ok); }
+  /* Карточки суток */
+  .pd-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .pd-dc { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 8px 10px;
+    background: linear-gradient(180deg, #1c2b3a 0%, #131e28 100%); border: 1px solid #2c3b4b; border-radius: calc(var(--cds-radius) + 2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 6px 14px -8px rgba(0, 0, 0, .7); }
+  .pd-dc:hover { border-color: #4a5e72; }
+  .pd-dc.dry { opacity: .5; }
+  .pd-dc[aria-pressed="true"] { opacity: 1; border-color: #81cffe; background: linear-gradient(180deg, #223a50 0%, #172a3a 100%); box-shadow: inset 0 0 0 1px #81cffe; }
+  @media (prefers-reduced-motion: no-preference) { .pd-dc { transition: transform var(--cds-dur-slow) var(--cds-ease-out); } .pd-dc:hover { transform: translateY(-2px); } }
+  .pd-dc-h { display: flex; justify-content: space-between; align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-dc-v { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); white-space: nowrap; }
+  .pd-dc-x { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; }
+  .pd-bell { color: var(--c-haz); display: inline-flex; }
+  /* Графики */
+  .pd-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+  .pd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--cds-gap-md); }
+  .pd-chart { position: relative; min-height: 190px; width: 100%; }
+  .pd-chart-s { min-height: 150px; }
+  .pd-chart svg { display: block; overflow: visible; }
+  .pd-chart .tick text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .pd-chart .domain { stroke: var(--cds-chart-axis); }
+  .pd-keys { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-key { display: inline-flex; align-items: center; gap: 6px; }
+  .pd-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .pd-sw-box { height: 10px; width: 10px; }
+  .pd-sw-haz { background: none; border-top: 2px dashed var(--c-haz); height: 0; }
+  .pd-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 6px; padding: 6px 9px; font-size: var(--cds-font-size-caption); color: var(--color-fg); white-space: nowrap; z-index: 3; }
+  .pd-tip .m { color: var(--cds-text-secondary); }
+  .pd-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-md) 0; }
+  .pd-daystats { display: flex; flex-wrap: wrap; gap: 6px var(--cds-gap-lg); font-size: var(--cds-font-size-body); }
+  .pd-daystats b { font-weight: var(--cds-font-weight-medium); }
+  .pd-part { font-size: var(--cds-font-size-caption); color: #e0c050; }
+  /* Таблицы */
+  .pd-tw { overflow-x: auto; }
+  .pd-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
+  .pd-table th, .pd-table td { padding: 5px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .pd-table th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+  .pd-table .l { text-align: left; }
+  .pd-table tr.sel td { background: #182838; }
+  .pd-table tr.hit td { color: var(--c-haz); }
+  .pd-fold { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); }
+  .pd-fold > summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); padding: 4px 0; }
+  .pd-fold[open] > summary { margin-bottom: var(--cds-gap-sm); }
+  .pd-notes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; color: var(--color-fg-muted); line-height: 1.5; max-width: 85ch; }
+  .pd-foot { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
+  .pd-foot p { margin: 0; max-width: 95ch; }
+  .pd-foot a { color: #81cffe; text-decoration: underline; text-underline-offset: 2px; }
+  @media (max-width: 520px) { .pd-top { flex-direction: column-reverse; align-items: flex-end; } .pd-title { align-self: stretch; } }
+</style>
+
+<div class="pd" lang="ru">
+  <header class="pd-head" id="top">
+    <div class="pd-top">
+      <h1 class="pd-title"><span data-l="ru">Осадки PARDIG: <span data-draw="place-ru" data-source="places" data-field="place_ru">—</span></span><span data-l="en" lang="en">PARDIG precipitation: <span data-draw="place-en" data-source="places" data-field="place_en">—</span></span></h1>
+      <div class="pd-lang" role="group" aria-label="Язык / Language">
+        <button type="button" data-lang-btn="ru" aria-pressed="true" lang="ru">RU</button>
+        <button type="button" data-lang-btn="en" aria-pressed="false" lang="en">EN</button>
+      </div>
+    </div>
+    <p class="pd-lead" data-l="ru" data-read lang="ru">С <b data-draw="p-first" data-source="ptot" data-field="first_day" data-row="0">—</b> по <b data-draw="p-last" data-source="ptot" data-field="last_day" data-row="0">—</b> выпало <b data-draw="p-sum" data-source="ptot" data-field="total_mm" data-row="0">—</b> мм осадков, дней с осадками — <b data-draw="p-wet" data-source="ptot" data-field="wet_days" data-row="0">—</b>. Наибольшая мгновенная интенсивность — <b data-draw="p-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</b> мм/ч (<span data-draw="p-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span>).</p>
+    <p class="pd-lead" data-l="en" data-read lang="en">From <b data-draw="p-first" data-source="ptot" data-field="first_day" data-row="0">—</b> to <b data-draw="p-last" data-source="ptot" data-field="last_day" data-row="0">—</b>, <b data-draw="p-sum" data-source="ptot" data-field="total_mm" data-row="0">—</b> mm of precipitation fell on <b data-draw="p-wet" data-source="ptot" data-field="wet_days" data-row="0">—</b> wet days. The highest instantaneous rate was <b data-draw="p-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</b> mm/h (<span data-draw="p-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span>).</p>
+    <div class="pd-row">
+      <span class="pd-lbl"><span data-l="ru">Пункт</span><span data-l="en" lang="en">Place</span></span>
+      <span class="pd-seg" role="group" aria-label="Пункт / Place" data-draw="place-btns" data-source="places"></span>
+    </div>
+    <div class="pd-row">
+      <label class="pd-lbl" for="per-select"><span data-l="ru">Период</span><span data-l="en" lang="en">Period</span></label>
+      <select class="dash-select" id="per-select" data-draw="per-select" data-source="daily" aria-label="Период / Period"></select>
+      <span class="pd-pill-stale" data-pill="stale" hidden><span data-l="ru">Данные не обновлялись больше суток: запустите блокнот</span><span data-l="en" lang="en">Data not updated for over a day: run the notebook</span></span>
+    </div>
+    <p class="pd-meta" data-l="ru">Точка <span data-draw="lat" data-source="places" data-field="lat">—</span>° с. ш., <span data-draw="lon" data-source="places" data-field="lon">—</span>° в. д., высота <span data-draw="elev" data-source="places" data-field="elev_m">—</span> м · узел сетки 0.1°: <span data-draw="nlat" data-source="places" data-field="node_lat">—</span>° с. ш., <span data-draw="nlon" data-source="places" data-field="node_lon">—</span>° в. д. · последний кадр <span data-draw="last-frame" data-source="places" data-field="last_frame_local">—</span> · данные обновлены <span data-draw="updated" data-source="info" data-field="value" data-where="key=updated_local">—</span> · время — ташкентское (UTC+5)</p>
+    <p class="pd-meta" data-l="en" lang="en">Point <span data-draw="lat" data-source="places" data-field="lat">—</span>° N, <span data-draw="lon" data-source="places" data-field="lon">—</span>° E, elevation <span data-draw="elev" data-source="places" data-field="elev_m">—</span> m · 0.1° grid node: <span data-draw="nlat" data-source="places" data-field="node_lat">—</span>° N, <span data-draw="nlon" data-source="places" data-field="node_lon">—</span>° E · last frame <span data-draw="last-frame" data-source="places" data-field="last_frame_local">—</span> · data updated <span data-draw="updated" data-source="info" data-field="value" data-where="key=updated_local">—</span> · Tashkent time (UTC+5)</p>
+  </header>
+
+  <section class="pd-sec" id="totals">
+    <div class="pd-kpis" data-fetchpriority="high">
+      <div class="pd-kpi" id="kpi-sum"><span class="pd-kpi-l"><span data-l="ru">Сумма за период</span><span data-l="en" lang="en">Period total</span></span>
+        <span class="pd-kpi-v"><span data-draw="k-sum" data-source="ptot" data-field="total_mm" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></span>
+        <span class="pd-kpi-n"><span data-l="ru">суток в периоде: </span><span data-l="en" lang="en">days in period: </span><span data-draw="k-days" data-source="ptot" data-field="days" data-row="0">—</span></span></div>
+      <div class="pd-kpi" id="kpi-wet"><span class="pd-kpi-l"><span data-l="ru">Дней с осадками ≥ 0.1 мм</span><span data-l="en" lang="en">Days with ≥ 0.1 mm</span></span>
+        <span class="pd-kpi-v"><span data-draw="k-wet" data-source="ptot" data-field="wet_days" data-row="0">—</span></span>
+        <span class="pd-kpi-n"><span data-l="ru">часов с осадками: </span><span data-l="en" lang="en">wet hours: </span><span data-draw="k-weth" data-source="ptot" data-field="wet_hours" data-row="0">—</span></span></div>
+      <div class="pd-kpi" id="kpi-day"><span class="pd-kpi-l"><span data-l="ru">Наибольшая за сутки</span><span data-l="en" lang="en">Wettest day</span></span>
+        <span class="pd-kpi-v"><span data-draw="k-maxday" data-source="ptot" data-field="max_day_mm" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></span>
+        <span class="pd-kpi-n" data-draw="k-maxday-at" data-source="ptot" data-field="max_day_date" data-row="0">—</span></div>
+      <div class="pd-kpi" id="kpi-1h"><span class="pd-kpi-l"><span data-l="ru">Наибольшая за час</span><span data-l="en" lang="en">Wettest hour</span></span>
+        <span class="pd-kpi-v"><span data-draw="k-max1h" data-source="ptot" data-field="max_1h_mm" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></span>
+        <span class="pd-kpi-n" data-draw="k-max1h-at" data-source="ptot" data-field="max_1h_end" data-row="0">—</span></div>
+      <div class="pd-kpi" id="kpi-int"><span class="pd-kpi-l"><span data-l="ru">Наибольшая мгновенная интенсивность</span><span data-l="en" lang="en">Peak instantaneous rate</span></span>
+        <span class="pd-kpi-v"><span data-draw="k-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span></span>
+        <span class="pd-kpi-n" data-draw="k-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span></div>
+    </div>
+  </section>
+
+  <section class="pd-sec" id="intense">
+    <h2 class="pd-h2"><span data-l="ru">Интенсивные осадки</span><span data-l="en" lang="en">Intense precipitation</span></h2>
+    <p class="pd-sub"><span data-l="ru">Отмечаются сутки, когда сумма за 12 часов подряд достигла <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> мм или мгновенная интенсивность — <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> мм/ч. Фазу осадков PARDIG не даёт, поэтому порог один для дождя и снега. Нажмите на отметку, чтобы открыть эти сутки.</span><span data-l="en" lang="en">Days are marked when 12 consecutive hours reached <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> mm or the instantaneous rate reached <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> mm/h. PARDIG gives no precipitation phase, so one threshold applies to rain and snow. Click a mark to open that day.</span></p>
+    <p class="pd-hz-none" data-hz="none" hidden><span data-l="ru">За выбранный период интенсивных осадков не было.</span><span data-l="en" lang="en">No intense precipitation in the selected period.</span></p>
+    <div class="pd-hz" data-draw="hz-list" data-source="dsel"></div>
+  </section>
+
+  <section class="pd-sec" id="days">
+    <h2 class="pd-h2"><span data-l="ru">По суткам</span><span data-l="en" lang="en">Day by day</span></h2>
+    <p class="pd-sub"><span data-l="ru">Сумма за сутки по ташкентскому времени и наибольшая мгновенная интенсивность (↑). Бледные карточки — сутки без осадков, колокольчик — интенсивные осадки. Нажмите на сутки, чтобы увидеть их подробно.</span><span data-l="en" lang="en">Daily total (Tashkent calendar day) and peak instantaneous rate (↑). Faded cards are dry days, a bell marks intense precipitation. Click a day to see it in detail.</span></p>
+    <div class="pd-days" data-draw="days" data-source="dsel"></div>
+    <div class="pd-card" id="period-charts">
+      <h3 class="pd-h3"><span data-l="ru">Осадки за сутки, мм</span><span data-l="en" lang="en">Daily precipitation, mm</span></h3>
+      <div class="pd-chart pd-chart-s" data-draw="ch-daily" data-source="dsel"></div>
+      <h3 class="pd-h3"><span data-l="ru">Сумма с начала периода, мм</span><span data-l="en" lang="en">Cumulative total since the start of the period, mm</span></h3>
+      <div class="pd-chart pd-chart-s" data-draw="ch-cum" data-source="dsel"></div>
+    </div>
+  </section>
+
+  <section class="pd-sec" id="day">
+    <h2 class="pd-h2"><span data-l="ru">Выбранные сутки:</span><span data-l="en" lang="en">Selected day:</span> <span data-draw="day-name">—</span></h2>
+    <div class="pd-daystats">
+      <span><span data-l="ru">Сумма </span><span data-l="en" lang="en">Total </span><b data-draw="d-sum" data-source="dsel" data-field="sum_mm">—</b> <span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span>
+      <span><span data-l="ru">наибольшая за час </span><span data-l="en" lang="en">wettest hour </span><b data-draw="d-1h" data-source="dsel" data-field="max_1h_mm">—</b> <span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span>
+      <span><span data-l="ru">мгновенная интенсивность до </span><span data-l="en" lang="en">instantaneous rate up to </span><b data-draw="d-int" data-source="dsel" data-field="max_int_mmh">—</b> <span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span>
+      <span><span data-l="ru">наибольшая за 12 ч </span><span data-l="en" lang="en">wettest 12 h </span><b data-draw="d-12h" data-source="dsel" data-field="max_12h_mm">—</b> <span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span>
+      <span class="pd-part" data-draw="d-part" data-source="dsel" data-field="n">—</span>
+    </div>
+    <div class="pd-row">
+      <span class="pd-lbl"><span data-l="ru">Шаг сумм</span><span data-l="en" lang="en">Totals step</span></span>
+      <span class="pd-seg" role="group" aria-label="Шаг / Step">
+        <button type="button" data-step-btn="15" aria-pressed="false"><span data-l="ru">15 мин</span><span data-l="en" lang="en">15 min</span></button>
+        <button type="button" data-step-btn="30" aria-pressed="false"><span data-l="ru">30 мин</span><span data-l="en" lang="en">30 min</span></button>
+        <button type="button" data-step-btn="60" aria-pressed="true"><span data-l="ru">1 час</span><span data-l="en" lang="en">1 hour</span></button>
+      </span>
+    </div>
+    <div class="pd-grid">
+      <div class="pd-card" id="day-sum"><h3 class="pd-h3"><span data-step-title="15" hidden><span data-l="ru">Осадки за каждые 15 минут, мм</span><span data-l="en" lang="en">Precipitation for each 15 minutes, mm</span></span><span data-step-title="30" hidden><span data-l="ru">Осадки за каждые 30 минут, мм</span><span data-l="en" lang="en">Precipitation for each 30 minutes, mm</span></span><span data-step-title="60"><span data-l="ru">Осадки за каждый час, мм</span><span data-l="en" lang="en">Hourly precipitation, mm</span></span></h3>
+        <p class="pd-sub" style="font-size: var(--cds-font-size-caption)"><span data-l="ru">Столбец подписан временем окончания интервала: например, «13:00» при шаге 1 час — осадки с 12:00 до 13:00.</span><span data-l="en" lang="en">Each bar is labelled by the end of its interval: with a 1-hour step, “13:00” means precipitation from 12:00 to 13:00.</span></p>
+        <div class="pd-chart" data-draw="ch-day-sum" data-source="dagg"></div></div>
+      <div class="pd-card" id="day-int"><h3 class="pd-h3"><span data-l="ru">Мгновенная интенсивность осадков, мм/ч</span><span data-l="en" lang="en">Instantaneous precipitation rate, mm/h</span></h3>
+        <p class="pd-sub" style="font-size: var(--cds-font-size-caption)"><span data-l="ru">Скорость выпадения осадков в момент кадра (каждые 15 минут), а не сумма за 15 минут. Слой за 15 минут ≈ мгновенная интенсивность × 0.25 ч.</span><span data-l="en" lang="en">The precipitation rate at the moment of each frame (every 15 minutes), not a 15-minute total. The 15-minute depth ≈ instantaneous rate × 0.25 h.</span></p>
+        <div class="pd-chart" data-draw="ch-day-int" data-source="dframes"></div>
+        <div class="pd-keys"><span class="pd-key"><span class="pd-sw" style="background: var(--c-int)"></span><span data-l="ru">мгновенная интенсивность</span><span data-l="en" lang="en">instantaneous rate</span></span><span class="pd-key"><span class="pd-sw pd-sw-haz"></span><span data-l="ru">порог интенсивных осадков (если в пределах графика)</span><span data-l="en" lang="en">intense-precipitation threshold (when within the chart)</span></span></div></div>
+    </div>
+  </section>
+
+  <details class="pd-fold" id="tab-days">
+    <summary><span data-l="ru">Таблица по суткам за период</span><span data-l="en" lang="en">Daily table for the period</span></summary>
+    <div class="pd-tw">
+      <table class="pd-table" data-source="dsel" data-row-key="date_local">
+        <thead><tr>
+          <th class="l" data-field="date_local"><span data-l="ru">Дата</span><span data-l="en" lang="en">Date</span></th>
+          <th data-field="sum_mm"><span data-l="ru">Сумма, мм</span><span data-l="en" lang="en">Total, mm</span></th>
+          <th data-field="cum_mm"><span data-l="ru">С начала периода, мм</span><span data-l="en" lang="en">Cumulative, mm</span></th>
+          <th data-field="max_1h_mm"><span data-l="ru">Макс. за 1 ч, мм</span><span data-l="en" lang="en">Max 1 h, mm</span></th>
+          <th data-field="max_int_mmh"><span data-l="ru">Макс. мгновенная интенс., мм/ч</span><span data-l="en" lang="en">Peak instantaneous rate, mm/h</span></th>
+          <th data-field="max_12h_mm"><span data-l="ru">Макс. за 12 ч, мм</span><span data-l="en" lang="en">Max 12 h, mm</span></th>
+          <th data-field="wet_h"><span data-l="ru">Часов с осадками</span><span data-l="en" lang="en">Wet hours</span></th>
+          <th data-field="n"><span data-l="ru">Кадров из 96</span><span data-l="en" lang="en">Frames of 96</span></th>
+        </tr></thead>
+        <tbody data-draw="tb-days"></tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="pd-fold" id="tab-day">
+    <summary><span data-l="ru">Таблица выбранных суток по интервалам</span><span data-l="en" lang="en">Selected day by interval</span></summary>
+    <div class="pd-tw">
+      <table class="pd-table" data-source="dagg" data-row-key="end_local">
+        <thead><tr>
+          <th class="l" data-field="end_local"><span data-l="ru">Конец интервала</span><span data-l="en" lang="en">Interval end</span></th>
+          <th data-field="sum_mm"><span data-l="ru">Осадки, мм</span><span data-l="en" lang="en">Precipitation, mm</span></th>
+          <th data-field="mean_mmh"><span data-l="ru">Средняя интенс. за интервал, мм/ч</span><span data-l="en" lang="en">Mean rate over interval, mm/h</span></th>
+          <th data-field="max_mmh"><span data-l="ru">Макс. мгновенная интенс., мм/ч</span><span data-l="en" lang="en">Peak instantaneous rate, mm/h</span></th>
+          <th data-field="cum_mm"><span data-l="ru">С начала суток, мм</span><span data-l="en" lang="en">Since day start, mm</span></th>
+          <th data-field="n"><span data-l="ru">Кадров</span><span data-l="en" lang="en">Frames</span></th>
+        </tr></thead>
+        <tbody data-draw="tb-day"></tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="pd-fold" id="method">
+    <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
+    <ul class="pd-notes" data-l="ru">
+      <li>PARDIG-NRT (Google DeepMind, Google Research) — оценка мгновенной интенсивности осадков по спутниковым наблюдениям и полям ECMWF, обученная на данных спутника GPM. Сетка 0.1° (~10 км), кадры через 15 минут, задержка обычно 2–8 часов. Берётся ближайший к пункту узел сетки: это среднее по ячейке, а не точечное значение.</li>
+      <li>Кадр — карта мгновенной интенсивности осадков (скорости выпадения, мм/ч) на момент :00, :15, :30 или :45 UTC; это не сумма за 15 минут. Слой осадков за 15 минут оценивается как мгновенная интенсивность кадра × 0.25 ч. Суммы за 30 минут, час, сутки и период — суммы таких слоёв. Интервал подписан временем конца; сутки — по ташкентскому времени, кадр 00:00 относится к предыдущим суткам. Полные сутки — 96 кадров; если кадров меньше, сумма считается по имеющимся.</li>
+      <li>Сумма за 12 часов — скользящая по кадрам. Для суток берётся наибольшая сумма окна, середина которого приходится на эти сутки; эпизод выше порога отмечается один раз — в сутках его наибольшего окна.</li>
+      <li>Ограничения по документации: интенсивность ограничена 75 мм/ч; над высокими горами точность ниже; зимой в снежных и горных условиях осадки занижаются; слабый снег и морось распознаются плохо.</li>
+      <li>Данные готовит блокнот Colab: читает новые кадры, копит весь ряд и записывает его в файл data.json рядом с этой страницей, а страница читает его при открытии. Новые данные появляются после запуска блокнота.</li>
+    </ul>
+    <ul class="pd-notes" data-l="en" lang="en">
+      <li>PARDIG-NRT (Google DeepMind, Google Research) estimates instantaneous precipitation rate from satellite observations and ECMWF fields, trained on GPM satellite data. 0.1° grid (~10 km), frames every 15 minutes, usual delay 2–8 hours. The grid node nearest to the place is used: a cell average, not a point value.</li>
+      <li>A frame is a map of the instantaneous precipitation rate (mm/h) at :00, :15, :30 or :45 UTC; it is not a 15-minute total. The 15-minute depth is estimated as the frame's instantaneous rate × 0.25 h. Totals for 30 minutes, an hour, a day and the period add up these depths. An interval is labelled by its end; days are Tashkent calendar days, and the 00:00 frame belongs to the previous day. A full day has 96 frames; with fewer, the total uses the frames available.</li>
+      <li>The 12-hour total is a running sum over frames. A day gets the largest total of a window centred in that day; an episode above the threshold is marked once, on the day of its largest window.</li>
+      <li>Known limits: rates are capped at 75 mm/h; skill is lower over high mountains; in winter, snowy and mountain conditions precipitation is underestimated; light snow and drizzle are hard to detect.</li>
+      <li>A Colab notebook reads new frames, keeps the whole series and writes it to the data.json file next to this page, which the page reads when opened. New data appear after the notebook runs.</li>
+    </ul>
+  </details>
+
+  <footer class="pd-foot" id="source">
+    <p data-l="ru">Источник данных: <a href="https://developers.google.com/weathernext/guides/pardig" target="_blank" rel="noopener">PARDIG</a> (Precipitation AI Reanalysis – Densely Inferred GPM), Google DeepMind и Google Research; Shalev et al. (2026), arXiv:2611.13941. Лицензия <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Данные изменены: выбран ближайший к пункту узел сетки, единицы переведены в мм/ч, рассчитаны суммы за интервалы, сутки и период и отметки интенсивных осадков. Это экспериментальная оценка осадков, а не наблюдения и не прогноз; не используйте её как единственный источник для решений о безопасности.</p>
+    <p data-l="en" lang="en">Data source: <a href="https://developers.google.com/weathernext/guides/pardig" target="_blank" rel="noopener">PARDIG</a> (Precipitation AI Reanalysis – Densely Inferred GPM), Google DeepMind and Google Research; Shalev et al. (2026), arXiv:2611.13941. Licence <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Changes made: the grid node nearest to the place was selected, units converted to mm/h, and interval, daily and period totals and intense-precipitation marks computed. This is an experimental precipitation estimate, not observations or a forecast; do not use it as the only source for safety decisions.</p>
+  </footer>
+</div>
+
+<script src="dash-gh.js"></script>
+<script src="pd-data.js"></script>
+<script src="pd-ui.js"></script>
+</div>
+</body>
+</html>
