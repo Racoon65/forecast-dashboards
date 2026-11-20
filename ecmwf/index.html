@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Прогноз ECMWF: Ташкент</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A6%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  /* Значения оформления, которые на claude.ai задаёт движок дашбордов */
+  :root {
+    --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+    --cds-radius: 8px; --cds-font-weight-medium: 500;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
+    --cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    color-scheme: dark; background: #0b1219;
+  }
+  html, body { margin: 0; background: #0b1219; }
+  #dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
+    appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+  .dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
+  @keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  @media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
+  a { color: #81cffe; }
+</style>
+<script src="dash-gh.js"></script>
+</head>
+<body>
+<div id="dash-root">
+<style>
+  /* Тёмная страница в одном стиле с дашбордом осадков на водосборы: одинаково при любой теме приложения. */
+  #dash-root { --dash-gutter: 0; }
+  .ec {
+    --color-fg: #f0efec; --color-fg-muted: #9aa3ad; --color-bg: #0b1219; --color-panel: #15202b; --color-border-line: #2a3644;
+    --color-ok: #2fbf71; --color-warn: #e0a030; --color-bad: #ec7e7e;
+    --cds-text-secondary: #9aa3ad; --cds-chart-grid: #1f2b38; --cds-chart-axis: #4a5868; --cds-chart-reference: #56677a;
+    --cds-surface-popover: #1b2835; --cds-border: #33414f; --cds-shadow-popover: 0 4px 14px rgba(0, 0, 0, .5);
+    /* Цвета моделей: IFS — синий, AIFS — оранжевый, везде одинаково */
+    --c-ifs: #5aa9f0; --c-aifs: #f0a35a; --c-band: rgba(129, 207, 254, .10); --c-haz: #ff8a5c;
+    color-scheme: dark; background: var(--color-bg); color: var(--color-fg);
+    padding-block: var(--cds-pad-lg); padding-left: max(16px, var(--cds-pad-lg)); padding-right: max(16px, var(--cds-pad-lg));
+    display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+  .ec:not(.ec-en) [data-l="en"] { display: none !important; }
+  .ec.ec-en [data-l="ru"] { display: none !important; }
+  .ec .dash-select { background-color: var(--color-panel); color: var(--color-fg); border-color: var(--color-border-line);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d6dee6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 12px 8px; max-width: 100%; }
+  .ec .dash-select:hover { border-color: #4a5e72; }
+  .ec-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+  .ec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--cds-gap-md); }
+  .ec-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .ec-lead { font-size: var(--cds-font-size-heading); line-height: 1.45; margin: 0; max-width: 66ch; }
+  .ec-lead b { font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .ec-ifs { color: var(--c-ifs); } .ec-aifs { color: var(--c-aifs); }
+  .ec-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; line-height: 1.6; }
+  .ec-lang { display: inline-flex; flex-shrink: 0; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; }
+  .ec-lang-btn { font: inherit; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); padding: 5px 14px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
+  .ec-lang-btn[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
+  .ec-lang-btn:focus-visible, .ec-day:focus-visible, .ec-hz-pill:focus-visible { outline: 2px solid #81cffe; outline-offset: 2px; }
+  .ec-run { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .ec-run-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-pill { font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 2px 10px; }
+  .ec-pill-arch { color: #0b1219; background: #81cffe; border-color: #81cffe; font-weight: var(--cds-font-weight-medium); }
+  .ec-pill-stale { color: #1a1406; background: #e0c050; border-color: #e0c050; font-weight: var(--cds-font-weight-medium); }
+  .ec-sec { display: flex; flex-direction: column; gap: var(--cds-gap-md); min-width: 0; }
+  .ec-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+  .ec-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .ec-sub { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin: 0; max-width: 72ch; line-height: 1.5; }
+  .ec-keys { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-key { display: inline-flex; align-items: center; gap: 6px; }
+  .ec-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .ec-sw-ifs { background: var(--c-ifs); } .ec-sw-aifs { background: var(--c-aifs); }
+  .ec-sw-box { height: 10px; width: 10px; border-radius: 2px; }
+  .ec-sw-solid { background: repeating-linear-gradient(45deg, var(--color-fg-muted) 0 2px, transparent 2px 4px); border: 1px solid var(--color-fg-muted); }
+  /* Опасные явления */
+  .ec-hz { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
+  .ec-hz-pill { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--cds-font-size-body); color: #1a0d06; background: var(--c-haz); border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .ec-hz-pill svg { flex-shrink: 0; }
+  .ec-hz-none { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-ok); }
+  /* Дни */
+  .ec-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--cds-gap-sm); }
+  .ec-days { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--cds-gap-md); }
+  .ec-day { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    padding: var(--cds-pad-md) var(--cds-pad-md) calc(var(--cds-pad-md) + 2px);
+    background: linear-gradient(180deg, #1c2b3a 0%, #131e28 100%); border: 1px solid #2c3b4b; border-radius: calc(var(--cds-radius) + 4px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 8px 18px -8px rgba(0, 0, 0, .7); }
+  .ec-day:hover { border-color: #4a5e72; }
+  .ec-day[aria-pressed="true"] { border-color: #81cffe; background: linear-gradient(180deg, #223a50 0%, #172a3a 100%);
+    box-shadow: inset 0 0 0 1px #81cffe, 0 10px 22px -8px rgba(0, 0, 0, .75); }
+  @media (prefers-reduced-motion: no-preference) {
+    .ec-day { transition: transform var(--cds-dur-slow) var(--cds-ease-out), box-shadow var(--cds-dur-slow) var(--cds-ease-out); }
+    .ec-day:hover { transform: translateY(-2px); }
+  }
+  .ec-day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+  .ec-day-d { font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-heading); }
+  .ec-day-w { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .ec-day-row { display: grid; grid-template-columns: 30px 1fr; gap: 1px 8px; font-size: var(--cds-font-size-caption); align-items: center; }
+  .ec-day-ico { grid-row: span 2; width: 30px; height: 30px; display: block; }
+  .ec-day-m { font-weight: var(--cds-font-weight-medium); margin-right: 4px; }
+  .ec-day-t { font-size: var(--cds-font-size-body); white-space: nowrap; }
+  .ec-day-x { color: var(--color-fg-muted); white-space: nowrap; }
+  .ec-wx-keys { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); align-items: center; }
+  .ec-wx-key { display: inline-flex; align-items: center; gap: 5px; }
+  .ec-wx-key svg { width: 20px; height: 20px; }
+  .ec-day-part { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-bell { color: var(--c-haz); display: inline-flex; }
+  /* Графики */
+  .ec-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+  .ec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--cds-gap-md); }
+  .ec-chart { position: relative; min-height: 200px; width: 100%; }
+  .ec-chart-s { min-height: 130px; }
+  .ec-chart svg { display: block; overflow: visible; }
+  .ec-chart .tick text, .ec-ax-label { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .ec-chart .tick line { stroke: var(--cds-chart-grid); }
+  .ec-chart .domain { stroke: var(--cds-chart-axis); }
+  .ec-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 6px; padding: 6px 9px; font-size: var(--cds-font-size-caption); color: var(--color-fg); white-space: nowrap; z-index: 3; }
+  .ec-tip b { font-weight: var(--cds-font-weight-medium); }
+  .ec-tip .m { color: var(--cds-text-secondary); }
+  .ec-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-md) 0; }
+  .ec-ctrl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  /* Таблицы */
+  .ec-tw { overflow-x: auto; }
+  .ec-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
+  .ec-table th, .ec-table td { padding: 5px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .ec-table th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+  .ec-table .l { text-align: left; }
+  .ec-table tr.sel td { background: #182838; }
+  .ec-table tr.hit td { color: var(--c-haz); }
+  .ec-pos { color: #ec9d7e; } .ec-neg { color: #7ec3ec; }
+  .ec-fold { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); }
+  .ec-fold > summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); padding: 4px 0; }
+  .ec-fold[open] > summary { margin-bottom: var(--cds-gap-sm); }
+  .ec-notes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; color: var(--color-fg-muted); line-height: 1.5; max-width: 80ch; }
+  .ec-models { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; }
+  .ec-models button { font: inherit; font-size: var(--cds-font-size-caption); padding: 4px 12px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
+  .ec-models button[aria-pressed="true"] { background: #81cffe; color: #0b1219; font-weight: var(--cds-font-weight-medium); }
+  .ec-models button:focus-visible { outline: 2px solid #81cffe; outline-offset: -2px; }
+  .ec-sw-dash { background: none; border-top: 2px dashed var(--color-fg-muted); height: 0; }
+  .ec-roses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--cds-gap-md); position: relative; min-height: 240px; }
+  .ec-rose { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
+  .ec-rose-t { font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
+  .ec-rose text { fill: #c3ccd5; font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .ec-c0 { background: #4a8cc9; } .ec-c1 { background: #6fb6ee; } .ec-c2 { background: #a8daf8; } .ec-c3 { background: #f2faff; }
+  .ec-foot { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
+  .ec-foot p { margin: 0; max-width: 90ch; }
+  .ec-foot a { color: #81cffe; text-decoration: underline; text-underline-offset: 2px; }
+  @media (max-width: 520px) { .ec-top { flex-direction: column-reverse; align-items: flex-end; } .ec-title { align-self: stretch; } }
+</style>
+
+<div class="ec" lang="ru">
+<svg class="ec-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <symbol id="ec-i-sun" viewBox="0 0 24 24"><path d="M12 2.4v2.4M12 19.2v2.4M2.4 12h2.4M19.2 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M5.2 18.8l1.7-1.7M17.1 6.9l1.7-1.7" stroke="#f2c14e" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.6" fill="#f2c14e"/></symbol>
+    <symbol id="ec-i-part" viewBox="0 0 24 24"><path d="M9 1.6v2M2 8.6h2M4 3.6l1.4 1.4M14 3.6l-1.4 1.4" stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="9" cy="8.6" r="3.7" fill="#f2c14e"/><path d="M8.5 21h10a3.8 3.8 0 0 0 .5-7.57A5.4 5.4 0 0 0 8.6 12.5 4.25 4.25 0 0 0 8.5 21z" fill="#c3ccd5" stroke="#16222d" stroke-width="1.2"/></symbol>
+    <symbol id="ec-i-cloud" viewBox="0 0 24 24"><path d="M5 12.5h8.5a3.3 3.3 0 0 0 .3-6.6A4.6 4.6 0 0 0 5.2 5.2 3.7 3.7 0 0 0 5 12.5z" fill="#7d8b99"/><path d="M7 20h10.5a4.1 4.1 0 0 0 .5-8.17A5.8 5.8 0 0 0 7.1 10.8 4.6 4.6 0 0 0 7 20z" fill="#b6c1cc" stroke="#16222d" stroke-width="1.2"/></symbol>
+    <symbol id="ec-i-rain" viewBox="0 0 24 24"><path d="M6.5 14.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 5.1 4.7 4.7 0 0 0 6.5 14.5z" fill="#b6c1cc"/><path d="M8.2 17.2l-1.1 3.2M12.6 17.2l-1.1 3.2M17 17.2l-1.1 3.2" stroke="#5aa9f0" stroke-width="1.9" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="ec-i-snow" viewBox="0 0 24 24"><path d="M6.5 14.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 5.1 4.7 4.7 0 0 0 6.5 14.5z" fill="#b6c1cc"/><path d="M7.5 16.7v3.4M6.0 17.549999999999997l3 1.7M6.0 19.25l3-1.7M12 18.7v3.4M10.5 19.549999999999997l3 1.7M10.5 21.25l3-1.7M16.5 16.7v3.4M15.0 17.549999999999997l3 1.7M15.0 19.25l3-1.7" stroke="#e6f3fc" stroke-width="1.1" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="ec-i-mix" viewBox="0 0 24 24"><path d="M6.5 14.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 5.1 4.7 4.7 0 0 0 6.5 14.5z" fill="#b6c1cc"/><path d="M8.2 17.2l-1.1 3.2M17 17.2l-1.1 3.2" stroke="#5aa9f0" stroke-width="1.9" stroke-linecap="round" fill="none"/><path d="M12 17.5v3.4M10.5 18.349999999999998l3 1.7M10.5 20.05l3-1.7" stroke="#e6f3fc" stroke-width="1.1" stroke-linecap="round" fill="none"/></symbol>
+  </defs>
+</svg>
+  <header class="ec-head" id="top">
+    <div class="ec-top">
+      <h1 class="ec-title"><span data-l="ru">Прогноз ECMWF: Ташкент</span><span data-l="en" lang="en">ECMWF forecast: Tashkent</span></h1>
+      <div class="ec-lang" role="group" aria-label="Язык / Language">
+        <button type="button" class="ec-lang-btn" data-lang-btn="ru" aria-pressed="true" lang="ru">RU</button>
+        <button type="button" class="ec-lang-btn" data-lang-btn="en" aria-pressed="false" lang="en">EN</button>
+      </div>
+    </div>
+    <p class="ec-lead" data-l="ru" data-read lang="ru">С <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> по <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b> температура воздуха по <span class="ec-ifs">IFS</span> — от <b data-draw="ifs-tmin" data-source="period" data-field="tmin_c" data-where="model=IFS">—</b> до <b data-draw="ifs-tmax" data-source="period" data-field="tmax_c" data-where="model=IFS">—</b> °C, по <span class="ec-aifs">AIFS</span> — от <b data-draw="aifs-tmin" data-source="period" data-field="tmin_c" data-where="model=AIFS">—</b> до <b data-draw="aifs-tmax" data-source="period" data-field="tmax_c" data-where="model=AIFS">—</b> °C. Сумма осадков за период: IFS <b data-draw="ifs-p" data-source="period" data-field="precip_mm" data-where="model=IFS">—</b> мм, AIFS <b data-draw="aifs-p" data-source="period" data-field="precip_mm" data-where="model=AIFS">—</b> мм.</p>
+    <p class="ec-lead" data-l="en" data-read lang="en">From <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> to <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b>, air temperature ranges from <b data-draw="ifs-tmin" data-source="period" data-field="tmin_c" data-where="model=IFS">—</b> to <b data-draw="ifs-tmax" data-source="period" data-field="tmax_c" data-where="model=IFS">—</b> °C in <span class="ec-ifs">IFS</span> and from <b data-draw="aifs-tmin" data-source="period" data-field="tmin_c" data-where="model=AIFS">—</b> to <b data-draw="aifs-tmax" data-source="period" data-field="tmax_c" data-where="model=AIFS">—</b> °C in <span class="ec-aifs">AIFS</span>. Total precipitation for the period: IFS <b data-draw="ifs-p" data-source="period" data-field="precip_mm" data-where="model=IFS">—</b> mm, AIFS <b data-draw="aifs-p" data-source="period" data-field="precip_mm" data-where="model=AIFS">—</b> mm.</p>
+    <div class="ec-run">
+      <label class="ec-run-label" for="run-select"><span data-l="ru">Показан расчёт</span><span data-l="en" lang="en">Run shown</span></label>
+      <select class="dash-select" id="run-select" data-draw="run-select" data-source="runs" aria-label="Расчёт / Run"></select>
+      <span class="ec-pill ec-pill-arch" data-pill="arch" hidden><span data-l="ru">Архивный расчёт</span><span data-l="en" lang="en">Archived run</span></span>
+      <span class="ec-models" role="group" aria-label="Модели / Models">
+        <button type="button" data-model-btn="both" aria-pressed="true"><span data-l="ru">Обе модели</span><span data-l="en" lang="en">Both models</span></button>
+        <button type="button" data-model-btn="IFS" aria-pressed="false"><span data-l="ru">Только IFS</span><span data-l="en" lang="en">IFS only</span></button>
+        <button type="button" data-model-btn="AIFS" aria-pressed="false"><span data-l="ru">Только AIFS</span><span data-l="en" lang="en">AIFS only</span></button>
+      </span>
+      <span class="ec-pill ec-pill-stale" data-pill="stale" hidden><span data-l="ru">Прогноз устарел: расчёту больше суток</span><span data-l="en" lang="en">Forecast is out of date: run is over a day old</span></span>
+    </div>
+    <p class="ec-meta" data-l="ru">Запуск моделей (UTC): <span class="ec-ifs">IFS</span> <span data-draw="ifs-init" data-source="info" data-field="value" data-where="key=ifs_init_utc">—</span>, <span class="ec-aifs">AIFS</span> <span data-draw="aifs-init" data-source="info" data-field="value" data-where="key=aifs_init_utc">—</span> · расчёт выполнен <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> по Ташкенту · точка <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° с. ш., <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° в. д., высота <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> м · время на странице — ташкентское (UTC+5)</p>
+    <p class="ec-meta" data-l="en" lang="en">Model runs (UTC): <span class="ec-ifs">IFS</span> <span data-draw="ifs-init" data-source="info" data-field="value" data-where="key=ifs_init_utc">—</span>, <span class="ec-aifs">AIFS</span> <span data-draw="aifs-init" data-source="info" data-field="value" data-where="key=aifs_init_utc">—</span> · computed <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> Tashkent time · point <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° N, <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° E, elevation <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> m · all times on this page are Tashkent time (UTC+5)</p>
+  </header>
+
+  <section class="ec-sec" id="hazards">
+    <h2 class="ec-h2"><span data-l="ru">Опасные явления</span><span data-l="en" lang="en">Hazards</span></h2>
+    <p class="ec-sub"><span data-l="ru">Проверяются по каждой модели отдельно. Нажмите на предупреждение, чтобы открыть этот день; критерии — в разделе «Как получены цифры» внизу.</span><span data-l="en" lang="en">Checked for each model separately. Click a warning to open that day; the criteria are under “How the numbers are made” at the bottom.</span></p>
+    <p class="ec-hz-none" data-haz="none" hidden><span data-l="ru">В этом расчёте опасных явлений не ожидается ни по одной модели.</span><span data-l="en" lang="en">No hazards are expected in this run in either model.</span></p>
+    <div class="ec-hz" data-draw="haz-list" data-source="hazards"></div>
+  </section>
+
+  <section class="ec-sec" id="days">
+    <h2 class="ec-h2"><span data-l="ru">По дням</span><span data-l="en" lang="en">Day by day</span></h2>
+    <p class="ec-sub"><span data-l="ru">Наименьшая и наибольшая температура воздуха, сумма осадков и наибольший ветер за сутки по ташкентскому времени; значок — погода дня по каждой модели. Нажмите на день, чтобы увидеть его подробно ниже.</span><span data-l="en" lang="en">Lowest and highest air temperature, total precipitation and strongest wind for each Tashkent calendar day; the icon shows each model’s weather for the day. Click a day to see it in detail below.</span></p>
+    <div class="ec-days" data-draw="days" data-source="daily hazards" data-fetchpriority="high"></div>
+    <div class="ec-wx-keys">
+      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-sun"></use></svg><span data-l="ru">ясно</span><span data-l="en" lang="en">clear</span></span>
+      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-part"></use></svg><span data-l="ru">переменная облачность</span><span data-l="en" lang="en">partly cloudy</span></span>
+      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-cloud"></use></svg><span data-l="ru">пасмурно</span><span data-l="en" lang="en">overcast</span></span>
+      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-rain"></use></svg><span data-l="ru">дождь</span><span data-l="en" lang="en">rain</span></span>
+      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-mix"></use></svg><span data-l="ru">дождь со снегом</span><span data-l="en" lang="en">rain and snow</span></span>
+      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-snow"></use></svg><span data-l="ru">снег</span><span data-l="en" lang="en">snow</span></span>
+    </div>
+  </section>
+
+  <section class="ec-sec" id="period">
+    <h2 class="ec-h2"><span data-l="ru">Весь период</span><span data-l="en" lang="en">Whole period</span></h2>
+    <p class="ec-sub"><span data-l="ru">Температура воздуха на 2 м по срокам и суточные суммы осадков. Выбранный день подсвечен; нажмите на график, чтобы выбрать другой.</span><span data-l="en" lang="en">Air temperature at 2 m for each forecast time, and daily precipitation totals. The selected day is highlighted; click the chart to pick another.</span></p>
+    <div class="ec-keys">
+      <span class="ec-key"><span class="ec-sw ec-sw-ifs"></span>IFS</span>
+      <span class="ec-key"><span class="ec-sw ec-sw-aifs"></span>AIFS</span>
+    </div>
+    <div class="ec-card">
+      <h3 class="ec-h3"><span data-l="ru">Температура воздуха на 2 м, °C</span><span data-l="en" lang="en">Air temperature at 2 m, °C</span></h3>
+      <div class="ec-chart" data-draw="period-t" data-source="data"></div>
+      <h3 class="ec-h3"><span data-l="ru">Осадки за сутки, мм</span><span data-l="en" lang="en">Daily precipitation, mm</span></h3>
+      <div class="ec-chart ec-chart-s" data-draw="period-p" data-source="daily"></div>
+    </div>
+  </section>
+
+  <section class="ec-sec" id="day">
+    <h2 class="ec-h2"><span data-l="ru">Выбранный день:</span><span data-l="en" lang="en">Selected day:</span> <span data-draw="day-name">—</span></h2>
+    <p class="ec-sub"><span data-l="ru">IFS даёт значения через 3 часа (после 144 ч прогноза — через 6), AIFS — через 6 часов. Осадки обеих моделей показаны за 6 часов, окончившихся в указанное время: у IFS сложены два 3-часовых интервала.</span><span data-l="en" lang="en">IFS gives values every 3 hours (every 6 after hour 144), AIFS every 6 hours. Precipitation for both models is shown for the 6 hours ending at the time shown; for IFS two 3-hour intervals are added together.</span></p>
+    <div class="ec-keys">
+      <span class="ec-key"><span class="ec-sw ec-sw-ifs"></span>IFS</span>
+      <span class="ec-key"><span class="ec-sw ec-sw-aifs"></span>AIFS</span>
+      <span class="ec-key"><span class="ec-sw ec-sw-dash"></span><span data-l="ru">пунктир — точка росы</span><span data-l="en" lang="en">dashed — dew point</span></span>
+      <span class="ec-key"><span class="ec-sw ec-sw-box ec-sw-solid"></span><span data-l="ru">штриховка — твёрдые осадки</span><span data-l="en" lang="en">hatched — solid precipitation</span></span>
+    </div>
+    <div class="ec-grid">
+      <div class="ec-card" id="day-temp"><h3 class="ec-h3"><span data-l="ru">Температура воздуха и точка росы на 2 м, °C</span><span data-l="en" lang="en">Air temperature and dew point at 2 m, °C</span></h3><div class="ec-chart" data-draw="day-t" data-source="data"></div></div>
+      <div class="ec-card" id="day-precip"><h3 class="ec-h3"><span data-l="ru">Осадки за 6 ч, мм</span><span data-l="en" lang="en">Precipitation per 6 h, mm</span></h3><div class="ec-chart" data-draw="day-p" data-source="precip6"></div></div>
+      <div class="ec-card" id="day-msl"><h3 class="ec-h3"><span data-l="ru">Давление на уровне моря, гПа</span><span data-l="en" lang="en">Mean sea-level pressure, hPa</span></h3><div class="ec-chart" data-draw="day-msl" data-source="data"></div></div>
+      <div class="ec-card" id="day-rh"><h3 class="ec-h3"><span data-l="ru">Относительная влажность, %</span><span data-l="en" lang="en">Relative humidity, %</span></h3><div class="ec-chart" data-draw="day-rh" data-source="data"></div></div>
+      <div class="ec-card" id="day-wind"><h3 class="ec-h3"><span data-l="ru">Скорость ветра на 10 м, м/с</span><span data-l="en" lang="en">Wind speed at 10 m, m/s</span></h3><div class="ec-chart" data-draw="day-w" data-source="data"></div></div>
+      <div class="ec-card" id="day-cloud"><h3 class="ec-h3"><span data-l="ru">Облачность, %</span><span data-l="en" lang="en">Cloud cover, %</span></h3><div class="ec-chart" data-draw="day-c" data-source="data"></div></div>
+    </div>
+    <div class="ec-card" id="rose">
+      <h3 class="ec-h3"><span data-l="ru">Роза ветров за выбранный день</span><span data-l="en" lang="en">Wind rose for the selected day</span></h3>
+      <p class="ec-sub"><span data-l="ru">Откуда дует ветер на 10 м: доля сроков прогноза за сутки по 8 румбам, с разбивкой по скорости. За сутки у IFS 8 сроков (после 144 ч прогноза — 4), у AIFS 4, поэтому каждый срок — 12.5 или 25 %.</span><span data-l="en" lang="en">Where the 10 m wind blows from: share of the day’s forecast times in 8 directions, split by speed. IFS has 8 times a day (4 after hour 144), AIFS 4, so each time is 12.5 or 25 %.</span></p>
+      <div class="ec-keys">
+        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c0"></span><span data-l="ru">до 2 м/с</span><span data-l="en" lang="en">under 2 m/s</span></span>
+        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c1"></span><span data-l="ru">2–5 м/с</span><span data-l="en" lang="en">2–5 m/s</span></span>
+        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c2"></span><span data-l="ru">5–10 м/с</span><span data-l="en" lang="en">5–10 m/s</span></span>
+        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c3"></span><span data-l="ru">10 м/с и более</span><span data-l="en" lang="en">10 m/s or more</span></span>
+      </div>
+      <div class="ec-roses" data-draw="rose" data-source="wind_rose"></div>
+    </div>
+  </section>
+
+  <section class="ec-sec" id="diff">
+    <h2 class="ec-h2"><span data-l="ru">Расхождение моделей</span><span data-l="en" lang="en">Model difference</span></h2>
+    <p class="ec-sub"><span data-l="ru">Разность IFS минус AIFS в общие сроки (через 6 часов). Выше нуля — IFS даёт больше, ниже — меньше. Осадки сравниваются за 6 часов, окончившихся в срок: у IFS сложены два 3-часовых интервала.</span><span data-l="en" lang="en">IFS minus AIFS at the forecast times both models share (every 6 hours). Above zero, IFS gives more; below, less. Precipitation is compared for the 6 hours ending at each time; for IFS two 3-hour intervals are added together.</span></p>
+    <div class="ec-ctrl">
+      <label for="diff-var"><span data-l="ru">Величина</span><span data-l="en" lang="en">Variable</span></label>
+      <select class="dash-select" id="diff-var" data-draw="diff-var" aria-label="Величина / Variable"></select>
+    </div>
+    <div class="ec-card"><div class="ec-chart" data-draw="diff-chart" data-source="diff_series"></div></div>
+    <details class="ec-fold" id="diff-days">
+    <summary><span data-l="ru">По суткам: IFS минус AIFS</span><span data-l="en" lang="en">By day: IFS minus AIFS</span></summary>
+    <div class="ec-tw">
+      <table class="ec-table" data-source="diff_daily" data-row-key="date_local">
+        <thead><tr>
+          <th class="l" data-field="date_local"><span data-l="ru">Дата</span><span data-l="en" lang="en">Date</span></th>
+          <th data-field="d_tmax"><span data-l="ru">Т макс, °C</span><span data-l="en" lang="en">T max, °C</span></th>
+          <th data-field="d_tmin"><span data-l="ru">Т мин, °C</span><span data-l="en" lang="en">T min, °C</span></th>
+          <th data-field="d_precip"><span data-l="ru">Осадки, мм</span><span data-l="en" lang="en">Precipitation, mm</span></th>
+          <th data-field="d_wind"><span data-l="ru">Ветер макс, м/с</span><span data-l="en" lang="en">Max wind, m/s</span></th>
+          <th data-field="d_rh"><span data-l="ru">Влажность, %</span><span data-l="en" lang="en">Humidity, %</span></th>
+        </tr></thead>
+        <tbody data-draw="diff-table"></tbody>
+      </table>
+    </div>
+    </details>
+  </section>
+
+  <details class="ec-fold" id="haz-table">
+    <summary><span data-l="ru">Превышения порогов опасных явлений</span><span data-l="en" lang="en">Hazard threshold exceedances</span></summary>
+    <p class="ec-sub" data-haz="none" hidden><span data-l="ru">В этом расчёте превышений нет.</span><span data-l="en" lang="en">No exceedances in this run.</span></p>
+    <div class="ec-tw" data-haz="some" hidden>
+      <table class="ec-table" data-source="hazards" data-row-key="model,date_local,kind">
+        <thead><tr>
+          <th class="l" data-field="date_local"><span data-l="ru">Дата</span><span data-l="en" lang="en">Date</span></th>
+          <th class="l" data-field="model"><span data-l="ru">Модель</span><span data-l="en" lang="en">Model</span></th>
+          <th class="l" data-field="kind"><span data-l="ru">Явление</span><span data-l="en" lang="en">Hazard</span></th>
+          <th data-field="value"><span data-l="ru">Значение</span><span data-l="en" lang="en">Value</span></th>
+          <th class="l" data-field="when_local"><span data-l="ru">Время</span><span data-l="en" lang="en">Time</span></th>
+        </tr></thead>
+        <tbody data-draw="haz-table"></tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="ec-fold" id="method">
+    <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
+    <ul class="ec-notes" data-l="ru">
+      <li>Критерии опасных явлений. Проверяются по каждой модели отдельно: ветер от <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> м/с, жидкие осадки от <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> мм за 12 ч, твёрдые от <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> мм за 12 ч, мороз до <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C и ниже, жара от <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C. Для осадков берётся наибольшая сумма за 12 ч в течение суток.</li>
+      <li>Открытые оперативные прогнозы ECMWF: IFS (физическая модель) и AIFS Single (модель на основе машинного обучения), сетка 0.25°. Берётся ближайший к точке узел сетки. Данные готовит блокнот Colab и записывает в файл data.json рядом с этой страницей (последние 30 расчётов); страница читает его при открытии.</li>
+      <li>Сутки считаются по ташкентскому времени. Срок относится к суткам, в которые он закончился; так же и осадки за интервал.</li>
+      <li>Фаза осадков. AIFS: твёрдые — снегопад самой модели. IFS: поля снегопада нет, поэтому осадки при температуре ниже пороговой (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C для высоты точки) считаются твёрдыми.</li>
+      <li>Значок погоды дня: при осадках от 0.5 мм за сутки — дождь, снег (твёрдые не менее 70 % суммы) или дождь со снегом; без осадков — по средней облачности за сутки: менее 30 % ясно, 30–70 % переменная облачность, 70 % и более пасмурно.</li>
+      <li>Осадки за 12 ч — сумма интервалов, окончившихся за 12 часов до срока включительно; для суток берётся наибольшая такая сумма.</li>
+      <li>Модели могут быть из разных запусков: у каждой берётся самый свежий полностью опубликованный прогноз.</li>
+    </ul>
+    <ul class="ec-notes" data-l="en" lang="en">
+      <li>Hazard criteria. Checked for each model separately: wind of <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> m/s or more, liquid precipitation of <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> mm or more in 12 h, solid of <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> mm or more in 12 h, frost of <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C or colder, heat of <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C or more. For precipitation, the highest 12-hour total within the day is used.</li>
+      <li>ECMWF open real-time forecasts: IFS (physics-based model) and AIFS Single (machine-learning model), 0.25° grid. The grid node nearest to the point is used. A Colab notebook prepares the data and writes it to the data.json file next to this page (the latest 30 runs); the page reads it when opened.</li>
+      <li>Days are Tashkent calendar days. A forecast time, and the precipitation of the interval ending at it, belongs to the day in which it ends.</li>
+      <li>Precipitation phase. AIFS: solid is the model's own snowfall. IFS has no snowfall field, so precipitation below the threshold temperature (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C for the point's elevation) counts as solid.</li>
+      <li>Day weather icon: with 0.5 mm or more of precipitation in the day — rain, snow (solid at least 70 % of the total) or rain and snow; without precipitation — by mean daily cloud cover: under 30 % clear, 30–70 % partly cloudy, 70 % or more overcast.</li>
+      <li>12-hour precipitation is the sum of intervals ending within the 12 hours up to a forecast time; for each day the highest such sum is used.</li>
+      <li>The two models may come from different runs: each uses its latest fully published forecast.</li>
+    </ul>
+  </details>
+  <footer class="ec-foot" id="source">
+    <p data-l="ru">Источник данных: <a href="https://www.ecmwf.int/en/forecasts/datasets/open-data" target="_blank" rel="noopener">ECMWF Open Data</a> — открытые оперативные прогнозы Европейского центра среднесрочных прогнозов погоды (модели IFS и AIFS Single), лицензия <a href="https://creativecommons.org/licenses/by/4.0/deed.ru" target="_blank" rel="noopener">CC BY 4.0</a>. Данные обработаны: выбран ближайший к точке узел сетки 0.25°, единицы переведены, рассчитаны суточные сводки, фаза осадков и проверки опасных явлений. ECMWF не несёт ответственности за эту обработку.</p>
+    <p data-l="en" lang="en">Data source: <a href="https://www.ecmwf.int/en/forecasts/datasets/open-data" target="_blank" rel="noopener">ECMWF Open Data</a> — open real-time forecasts of the European Centre for Medium-Range Weather Forecasts (IFS and AIFS Single models), licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. The data have been processed: the 0.25° grid node nearest to the point was selected, units converted, and daily summaries, precipitation phase and hazard checks computed. ECMWF is not responsible for this processing.</p>
+  </footer>
+</div>
+
+<script>
+  /* ---------- Данные: файл с расчётами (набор src); страница выбирает лист по своим параметрам ---------- */
+  dash.calc('runs', {
+    title: "Список сохранённых расчётов",
+    description: "Расчёты в файле: время расчёта, запуски IFS и AIFS, период и файл Excel. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
+      const name = 'runs';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['runs'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+  dash.calc('info', {
+    title: "Сведения о расчёте",
+    description: "Время расчёта и запусков моделей, период прогноза, координаты и высота точки, пороговая температура фазы осадков. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
+      const p = dash.params(); const name = p.run || 'latest';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['info'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+  dash.calc('data', {
+    title: "Значения IFS и AIFS по срокам",
+    description: "Температура, точка росы, влажность, ветер, давление, осадки (жидкие и твёрдые) и облачность в каждый срок прогноза обеих моделей. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
+      const p = dash.params(); const name = p.run || 'latest';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['data'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+  dash.calc('daily', {
+    title: "Сводка по суткам",
+    description: "Для каждой модели и суток по ташкентскому времени: температура, осадки, наибольший ветер, средние влажность, давление и облачность. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
+      const p = dash.params(); const name = p.run || 'latest';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['daily'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+  dash.calc('hazards', {
+    title: "Проверка опасных явлений",
+    description: "Для каждой модели, суток и явления: наибольшее значение, порог и превышен ли он. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
+      const p = dash.params(); const name = p.run || 'latest';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['hazards'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+
+  /* ---------- Расчёты ---------- */
+  dash.calc('period', {
+    title: 'Итоги периода по моделям',
+    description: 'Наибольшая и наименьшая температура и сумма осадков за весь период по суточной сводке каждой модели.',
+    inputs: ['daily'],
+    fn: (daily) => ['IFS', 'AIFS'].map((m) => {
+      const r = daily.filter((d) => d.model === m);
+      if (!r.length) return null;
+      const tx = r.map((d) => d.tmax_c).filter((v) => v != null), tn = r.map((d) => d.tmin_c).filter((v) => v != null);
+      return {model: m, tmax_c: tx.length ? Math.max(...tx) : null, tmin_c: tn.length ? Math.min(...tn) : null,
+        precip_mm: Math.round(r.reduce((s, d) => s + (d.precip_mm || 0), 0) * 10) / 10, days: r.length};
+    }).filter(Boolean),
+  });
+  dash.calc('thr', {
+    title: 'Пороги опасных явлений',
+    description: 'Порог каждого вида явления, как он записан в проверке опасных явлений этого расчёта.',
+    inputs: ['hazards'],
+    fn: (hazards) => {
+      const seen = new Map();
+      for (const h of hazards) if (!seen.has(h.kind)) seen.set(h.kind, {kind: h.kind, threshold: h.threshold, unit: h.unit});
+      return [...seen.values()];
+    },
+  });
+  dash.calc('haz_hits', {
+    title: 'Число превышений порогов',
+    description: 'Сколько проверок «модель — сутки — явление» превышают порог.',
+    inputs: ['hazards'],
+    fn: (hazards) => hazards.filter((h) => h.exceeded === 1).length,
+  });
+  dash.calc('age_h', {
+    title: 'Возраст расчёта, ч',
+    description: 'Сколько часов прошло от времени расчёта (Ташкент, UTC+5) до открытия страницы.',
+    inputs: ['info'],
+    fn: (info) => {
+      const r = info.find((x) => x.key === 'requested_local');
+      if (!r || !r.value) return null;
+      const t = Date.parse(r.value.replace(' ', 'T') + ':00+05:00');
+      return Number.isFinite(t) ? Math.max(0, Math.round((Date.now() - t) / 3600000)) : null;
+    },
+  });
+  dash.calc('precip6', {
+    title: 'Осадки за 6 часов по моделям',
+    description: 'Жидкие и твёрдые осадки за 6 часов, окончившихся в 00, 06, 12 и 18 UTC. У IFS сложены интервалы, окончившиеся внутри этих 6 часов; у AIFS интервал и так 6-часовой. Срок 0 ч не входит.',
+    inputs: ['data'],
+    fn: (data) => {
+      const out = new Map();
+      for (const r of data) {
+        if (!r.valid_utc || !r.lead_h) continue;
+        const t = Date.parse(r.valid_utc);
+        if (!Number.isFinite(t)) continue;
+        const end = Math.ceil(t / 21600000) * 21600000;
+        const key = r.model + '|' + end;
+        const o = out.get(key) || {model: r.model, end_ms: end, liquid_mm: 0, solid_mm: 0, precip_mm: 0};
+        o.liquid_mm += r.liquid_mm || 0; o.solid_mm += r.solid_mm || 0; o.precip_mm += r.precip_mm || 0;
+        out.set(key, o);
+      }
+      return [...out.values()].map((o) => {
+        const loc = new Date(o.end_ms + 5 * 3600000).toISOString();
+        return {model: o.model, valid_utc: new Date(o.end_ms).toISOString().slice(0, 16) + 'Z', local: loc.slice(0, 10) + ' ' + loc.slice(11, 16),
+          date_local: loc.slice(0, 10), liquid_mm: Math.round(o.liquid_mm * 10) / 10, solid_mm: Math.round(o.solid_mm * 10) / 10,
+          precip_mm: Math.round(o.precip_mm * 10) / 10};
+      }).sort((a, b) => (a.valid_utc < b.valid_utc ? -1 : a.valid_utc > b.valid_utc ? 1 : a.model < b.model ? 1 : -1));
+    },
+  });
+  dash.calc('wind_rose', {
+    title: 'Роза ветров по суткам',
+    description: 'Для каждой модели и суток (по ташкентскому времени): повторяемость направлений ветра (8 румбов, откуда дует) по классам скорости до 2, 2–5, 5–10, 10 м/с и более; % от сроков модели за эти сутки.',
+    inputs: ['data'],
+    fn: (data) => {
+      const out = [];
+      const groups = new Map();
+      for (const r of data) {
+        if (r.wdir_deg == null || r.wind_ms == null || !r.local) continue;
+        const k = r.model + '|' + r.local.slice(0, 10);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(r);
+      }
+      for (const [k, rs] of groups) {
+        const [model, date_local] = k.split('|');
+        const n = rs.length;
+        const cnt = {};
+        for (const r of rs) {
+          const dir = Math.round((((r.wdir_deg % 360) + 360) % 360) / 45) % 8;
+          const cls = r.wind_ms < 2 ? 0 : r.wind_ms < 5 ? 1 : r.wind_ms < 10 ? 2 : 3;
+          cnt[dir + '|' + cls] = (cnt[dir + '|' + cls] || 0) + 1;
+        }
+        for (let dir = 0; dir < 8; dir++) for (let cls = 0; cls < 4; cls++) {
+          const c = cnt[dir + '|' + cls] || 0;
+          out.push({model, date_local, dir, cls, count: c, pct: Math.round(c / n * 1000) / 10, n});
+        }
+      }
+      return out;
+    },
+  });
+  dash.calc('diff_series', {
+    title: 'Разность IFS − AIFS по срокам',
+    description: 'Для сроков, которые есть у обеих моделей: температура воздуха, давление, влажность, ветер и осадки за 6 ч (из расчёта «Осадки за 6 часов по моделям») IFS минус AIFS.',
+    inputs: ['data', 'precip6'],
+    fn: (data, precip6) => {
+      const aifs = new Map(data.filter((r) => r.model === 'AIFS').map((r) => [r.valid_utc, r]));
+      const p6 = new Map((precip6 || []).map((r) => [r.model + '|' + Date.parse(r.valid_utc), r.precip_mm]));
+      const d = (x, y) => (x == null || y == null ? null : Math.round((x - y) * 10) / 10);
+      return data.filter((r) => r.model === 'IFS' && aifs.has(r.valid_utc)).map((r) => {
+        const a = aifs.get(r.valid_utc);
+        const t = Date.parse(r.valid_utc);
+        const pi = p6.get('IFS|' + t), pa = p6.get('AIFS|' + t);
+        return {valid_utc: r.valid_utc, local: r.local, t2m_c: d(r.t2m_c, a.t2m_c), msl_hpa: d(r.msl_hpa, a.msl_hpa),
+          rh_pct: d(r.rh_pct, a.rh_pct), wind_ms: d(r.wind_ms, a.wind_ms), precip_mm: d(pi ?? null, pa ?? null)};
+      });
+    },
+  });
+  dash.calc('diff_daily', {
+    title: 'Разность IFS − AIFS по суткам',
+    description: 'Для каждых суток, которые есть у обеих моделей: наибольшая и наименьшая температура, сумма осадков, наибольший ветер и средняя влажность IFS минус AIFS.',
+    inputs: ['daily'],
+    fn: (daily) => {
+      const aifs = new Map(daily.filter((r) => r.model === 'AIFS').map((r) => [r.date_local, r]));
+      const d = (x, y) => (x == null || y == null ? null : Math.round((x - y) * 10) / 10);
+      return daily.filter((r) => r.model === 'IFS' && aifs.has(r.date_local)).map((r) => {
+        const a = aifs.get(r.date_local);
+        return {date_local: r.date_local, d_tmax: d(r.tmax_c, a.tmax_c), d_tmin: d(r.tmin_c, a.tmin_c), d_precip: d(r.precip_mm, a.precip_mm),
+          d_wind: d(r.wind_max_ms, a.wind_max_ms), d_rh: d(r.rh_mean_pct, a.rh_mean_pct)};
+      });
+    },
+  });
+</script>
+
+<script>
+  /* ---------- Общие помощники ---------- */
+  const EC = (window.EC = {});
+  EC.L = () => (dash.params().lang === 'en' ? 'en' : 'ru');
+  EC.TR = {
+    ru: {wd: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'], mon: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+      mm: 'мм', c: '°C', ms: 'м/с', hpa: 'гПа', pct: '%', fail: 'Не удалось загрузить', none: 'Нет данных за этот день', latest: 'Последний расчёт',
+      liquid: 'жидкие', solid: 'твёрдые', day: 'за сутки', part: 'неполные сутки', diff: 'IFS − AIFS',
+      kind: {wind: 'Сильный ветер', rain12: 'Сильный дождь', snow12: 'Сильный снег', frost: 'Мороз', heat: 'Жара'},
+      dirs: ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'], cls: ['до 2 м/с', '2–5 м/с', '5–10 м/с', '10 м/с и более'], times: 'сроков', aRose: 'Роза ветров за выбранный день, модель ', aDayT: 'Температура и точка росы за выбранный день',
+      aT: 'Температура по срокам за весь период, IFS и AIFS', aP: 'Суточные суммы осадков, IFS и AIFS', aDay: 'График за выбранный день: ', aDiff: 'Разность IFS минус AIFS по срокам'},
+    en: {wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], mon: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      mm: 'mm', c: '°C', ms: 'm/s', hpa: 'hPa', pct: '%', fail: 'Failed to load', none: 'No data for this day', latest: 'Latest run',
+      liquid: 'liquid', solid: 'solid', day: 'per day', part: 'partial day', diff: 'IFS − AIFS',
+      kind: {wind: 'Strong wind', rain12: 'Heavy rain', snow12: 'Heavy snow', frost: 'Frost', heat: 'Heat'},
+      dirs: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'], cls: ['under 2 m/s', '2–5 m/s', '5–10 m/s', '10 m/s or more'], times: 'forecast times', aRose: 'Wind rose for the selected day, model ', aDayT: 'Temperature and dew point for the selected day',
+      aT: 'Temperature at each forecast time over the whole period, IFS and AIFS', aP: 'Daily precipitation totals, IFS and AIFS', aDay: 'Chart for the selected day: ', aDiff: 'IFS minus AIFS at each shared forecast time'},
+  };
+  EC.tr = (k) => EC.TR[EC.L()][k];
+  EC.MODELS = [{m: 'IFS', color: 'var(--c-ifs)'}, {m: 'AIFS', color: 'var(--c-aifs)'}];
+  EC.ACT = () => { const p = dash.params().models; return p === 'IFS' || p === 'AIFS' ? EC.MODELS.filter((d) => d.m === p) : EC.MODELS; };
+  EC.enc = (s) => encodeURIComponent(String(s));
+  EC.f1 = (v) => (v == null || !Number.isFinite(v) ? '—' : (Math.round(v * 10) / 10).toFixed(1));
+  EC.f0 = (v) => (v == null || !Number.isFinite(v) ? '—' : String(Math.round(v)));
+  EC.ok = (id) => dash.data(id).status === 'ok';
+  EC.rows = (id) => (EC.ok(id) ? dash.data(id).data : []);
+  EC.parseT = d3.utcParse('%Y-%m-%d %H:%M');
+  EC.parseD = d3.utcParse('%Y-%m-%d');
+  EC.fmtH = d3.utcFormat('%H:%M');
+  EC.fmtDM = d3.utcFormat('%d.%m');
+  EC.fmtDMH = d3.utcFormat('%d.%m %H:%M');
+  EC.info = (k) => { const r = EC.rows('info').find((x) => x.key === k); return r ? r.value : null; };
+  EC.dates = () => {
+    const s = new Set(EC.rows('daily').map((r) => r.date_local));
+    return [...s].filter(Boolean).sort();
+  };
+  EC.day = () => {
+    const ds = EC.dates(), p = dash.params().day;
+    return ds.includes(p) ? p : (ds[0] || null);
+  };
+  EC.dayLabel = (iso, long) => {
+    const d = EC.parseD(iso); if (!d) return iso || '—';
+    const t = EC.TR[EC.L()];
+    return long ? (t.wd[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + t.mon[d.getUTCMonth()]) : EC.fmtDM(d);
+  };
+  EC.state = (el, id) => {
+    const st = dash.data(id).status;
+    if (st === 'ok') return true;
+    el.replaceChildren();
+    const p = document.createElement('div');
+    p.className = st === 'error' ? 'ec-fail' : 'dash-skeleton';
+    p.textContent = st === 'error' ? EC.tr('fail') : '';
+    if (st !== 'error') p.style.minHeight = '120px';
+    el.appendChild(p);
+    return false;
+  };
+  EC.bell = (size) => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const s = document.createElementNS(ns, 'svg');
+    s.setAttribute('width', size); s.setAttribute('height', size); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true');
+    const p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', 'M12 2a6 6 0 0 0-6 6v4.5L4 16v1h16v-1l-2-3.5V8a6 6 0 0 0-6-6zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z');
+    p.setAttribute('fill', 'currentColor');
+    s.appendChild(p);
+    return s;
+  };
+  EC.pickDay = (iso) => { if (iso) dash.setParams({day: iso}); };
+  EC.WX = {sun: ['ясно', 'clear'], part: ['переменная облачность', 'partly cloudy'], cloud: ['пасмурно', 'overcast'],
+    rain: ['дождь', 'rain'], snow: ['снег', 'snow'], mix: ['дождь со снегом', 'rain and snow']};
+  EC.wx = (r) => {
+    const p = r.precip_mm || 0, so = r.solid_mm || 0, c = r.tcc_mean_pct;
+    if (p >= 0.5) { const sh = so / p; return sh >= 0.7 ? 'snow' : sh <= 0.3 ? 'rain' : 'mix'; }
+    if (c == null) return 'part';
+    return c < 30 ? 'sun' : c < 70 ? 'part' : 'cloud';
+  };
+  EC.icon = (id, label) => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const s = document.createElementNS(ns, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', 'ec-day-ico');
+    s.setAttribute('role', 'img'); s.setAttribute('aria-label', label);
+    const u = document.createElementNS(ns, 'use'); u.setAttribute('href', '#ec-i-' + id); s.appendChild(u);
+    return s;
+  };
+
+  /* Линейный график с подсказкой. series: [{m, color, points: [{x: Date, y}]}] */
+  EC.lineChart = (el, o) => {
+    el.replaceChildren();
+    const W = Math.max(260, el.clientWidth || 600), H = o.h || 210;
+    const pts = o.series.flatMap((s) => s.points.filter((p) => p.y != null));
+    if (!pts.length) { const n = document.createElement('div'); n.className = 'ec-fail'; n.textContent = EC.tr('none'); el.appendChild(n); return; }
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', o.aria || '');
+    const xDom = o.xDomain || d3.extent(pts, (p) => p.x);
+    let yDom = o.yDomain || d3.extent(pts, (p) => p.y);
+    if (o.zero) yDom = [Math.min(0, yDom[0]), Math.max(0, yDom[1])];
+    if (yDom[0] === yDom[1]) yDom = [yDom[0] - 1, yDom[1] + 1];
+    const y = d3.scaleLinear().domain(yDom).nice(5);
+    const m = {t: 10, r: 12, b: 24, l: 10};
+    const gy = svg.append('g');
+    y.range([H - m.b, m.t]);
+    gy.call(d3.axisLeft(y).ticks(5).tickSize(0).tickPadding(6).tickFormat(o.yFmt || d3.format('~f')));
+    let wl = 0; gy.selectAll('text').each(function () { wl = Math.max(wl, this.getComputedTextLength()); });
+    m.l = Math.ceil(wl) + 10;
+    const x = d3.scaleUtc().domain(xDom).range([m.l, W - m.r]);
+    gy.attr('transform', `translate(${m.l},0)`).call((g) => g.select('.domain').remove());
+    gy.selectAll('.tick line').attr('x2', W - m.r - m.l).attr('stroke', 'var(--cds-chart-grid)');
+    if (o.band) {
+      const b0 = Math.max(x(o.band[0]), m.l), b1 = Math.min(x(o.band[1]), W - m.r);
+      if (b1 > b0) svg.insert('rect', ':first-child').attr('x', b0).attr('y', m.t).attr('width', b1 - b0).attr('height', H - m.t - m.b).attr('fill', 'var(--c-band)');
+    }
+    const nT = Math.max(2, Math.floor((W - m.l - m.r) / (o.tickW || 70)));
+    const gx = svg.append('g').attr('transform', `translate(0,${H - m.b})`)
+      .call(d3.axisBottom(x).ticks(o.xTicks ? o.xTicks(nT) : nT).tickSize(4).tickFormat(o.xFmt || EC.fmtDM));
+    gx.select('.domain').attr('stroke', 'var(--cds-chart-axis)');
+    if (o.zero) svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '3 3');
+    const line = d3.line().defined((p) => p.y != null).x((p) => x(p.x)).y((p) => y(p.y));
+    for (const s of o.series) {
+      svg.append('path').datum(s.points).attr('fill', 'none').attr('stroke-width', s.dash ? 1.6 : 2).attr('stroke-dasharray', s.dash ? '5 4' : null).attr('d', line).style('stroke', s.color);
+      if (o.dots) svg.append('g').selectAll('circle').data(s.points.filter((p) => p.y != null)).join('circle')
+        .attr('cx', (p) => x(p.x)).attr('cy', (p) => y(p.y)).attr('r', s.dash ? 1.8 : 2.6).style('fill', s.color);
+    }
+    /* подсказка */
+    const tip = document.createElement('div'); tip.className = 'ec-tip'; tip.hidden = true; el.appendChild(tip);
+    const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
+    const xs = [...new Set(pts.map((p) => +p.x))].sort((a, b) => a - b);
+    const near = (px) => { const v = +x.invert(px); let best = xs[0]; for (const t of xs) if (Math.abs(t - v) < Math.abs(best - v)) best = t; return best; };
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+      .style('cursor', o.onPick ? 'pointer' : 'default')
+      .on('pointermove', (ev) => {
+        const [px] = d3.pointer(ev); const t = near(px);
+        rule.attr('x1', x(t)).attr('x2', x(t)).attr('visibility', 'visible');
+        tip.replaceChildren();
+        const h = document.createElement('div'); const hb = document.createElement('b'); hb.textContent = EC.fmtDMH(new Date(t)); h.appendChild(hb); tip.appendChild(h);
+        for (const s of o.series) {
+          const p = s.points.find((q) => +q.x === t);
+          const r = document.createElement('div');
+          const n = document.createElement('span'); n.textContent = (s.label || s.m) + ': '; n.style.color = s.color;
+          const v = document.createElement('span'); v.textContent = p && p.y != null ? (o.vFmt || EC.f1)(p.y) + ' ' + (o.unit || '') : '—';
+          r.append(n, v); tip.appendChild(r);
+        }
+        tip.hidden = false;
+        const tw = tip.offsetWidth; const left = x(t) + 12 + tw > W ? x(t) - tw - 12 : x(t) + 12;
+        tip.style.left = Math.max(0, left) + 'px'; tip.style.top = m.t + 'px';
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); })
+      .on('click', (ev) => { if (o.onPick) o.onPick(new Date(near(d3.pointer(ev)[0]))); });
+  };
+
+  /* Сгруппированные столбцы по двум моделям. rows: [{x: Date (конец интервала), m, liquid, solid, total}] */
+  EC.barChart = (el, o) => {
+    el.replaceChildren();
+    const W = Math.max(260, el.clientWidth || 600), H = o.h || 150;
+    const act = EC.ACT(); o = Object.assign({}, o, {rows: o.rows.filter((r) => act.some((a) => a.m === r.m))});
+    if (!o.rows.length) { const n = document.createElement('div'); n.className = 'ec-fail'; n.textContent = EC.tr('none'); el.appendChild(n); return; }
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', o.aria || '');
+    const defs = svg.append('defs');
+    for (const mm of EC.MODELS) {
+      const pat = defs.append('pattern').attr('id', 'ec-hatch-' + mm.m + '-' + o.id).attr('width', 5).attr('height', 5).attr('patternUnits', 'userSpaceOnUse').attr('patternTransform', 'rotate(45)');
+      pat.append('rect').attr('width', 5).attr('height', 5).attr('fill', 'var(--color-panel)');
+      pat.append('rect').attr('width', 2.4).attr('height', 5).style('fill', mm.color);
+    }
+    const keys = [...new Set(o.rows.map((r) => +r.x))].sort((a, b) => a - b);
+    const ymax = Math.max(1, d3.max(o.rows, (r) => r.total) || 0);
+    const y = d3.scaleLinear().domain([0, ymax]).nice(4);
+    const m = {t: 10, r: 12, b: 24, l: 10};
+    y.range([H - m.b, m.t]);
+    const gy = svg.append('g').call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(6).tickFormat(d3.format('~f')));
+    let wl = 0; gy.selectAll('text').each(function () { wl = Math.max(wl, this.getComputedTextLength()); });
+    m.l = Math.ceil(wl) + 10;
+    gy.attr('transform', `translate(${m.l},0)`).call((g) => g.select('.domain').remove());
+    gy.selectAll('.tick line').attr('x2', W - m.r - m.l).attr('stroke', 'var(--cds-chart-grid)');
+    const x = d3.scaleBand().domain(keys).range([m.l, W - m.r]).paddingInner(0.25).paddingOuter(0.1);
+    const xm = d3.scaleBand().domain(act.map((d) => d.m)).range([0, x.bandwidth()]).padding(0.08);
+    if (o.selKeys) {
+      for (const k of keys) if (o.selKeys(k)) svg.append('rect').attr('x', x(k) - x.step() * x.paddingInner() / 2).attr('y', m.t).attr('width', x.step()).attr('height', H - m.t - m.b).attr('fill', 'var(--c-band)');
+    }
+    const every = Math.max(1, Math.ceil(keys.length * 46 / (W - m.l - m.r)));
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`)
+      .call(d3.axisBottom(x).tickValues(keys.filter((k, i) => i % every === 0)).tickSize(4).tickFormat((k) => (o.xFmt || EC.fmtDM)(new Date(k))))
+      .call((g) => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'));
+    const col = (mm) => EC.MODELS.find((d) => d.m === mm).color;
+    const g = svg.append('g');
+    for (const r of o.rows) {
+      const bx = x(+r.x) + xm(r.m), bw = xm.bandwidth();
+      const liq = r.liquid || 0, sol = r.solid || 0;
+      if (liq > 0) g.append('rect').attr('x', bx).attr('width', bw).attr('y', y(liq)).attr('height', y(0) - y(liq)).style('fill', col(r.m));
+      if (sol > 0) g.append('rect').attr('x', bx).attr('width', bw).attr('y', y(liq + sol)).attr('height', y(liq) - y(liq + sol))
+        .attr('fill', 'url(#ec-hatch-' + r.m + '-' + o.id + ')').style('stroke', col(r.m)).attr('stroke-width', 0.8);
+    }
+    const tip = document.createElement('div'); tip.className = 'ec-tip'; tip.hidden = true; el.appendChild(tip);
+    svg.append('g').selectAll('rect').data(keys).join('rect')
+      .attr('x', (k) => x(k) - x.step() * x.paddingInner() / 2).attr('width', x.step()).attr('y', m.t).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+      .style('cursor', o.onPick ? 'pointer' : 'default')
+      .on('pointerenter', (ev, k) => {
+        tip.replaceChildren();
+        const h = document.createElement('div'); const hb = document.createElement('b'); hb.textContent = (o.tipFmt || EC.fmtDM)(new Date(k)); h.appendChild(hb); tip.appendChild(h);
+        for (const mm of act) {
+          const r = o.rows.find((q) => +q.x === k && q.m === mm.m);
+          const line = document.createElement('div');
+          const n = document.createElement('span'); n.textContent = mm.m + ': '; n.style.color = mm.color;
+          const v = document.createElement('span');
+          v.textContent = r ? EC.f1(r.total) + ' ' + EC.tr('mm') + ' (' + EC.tr('liquid') + ' ' + EC.f1(r.liquid) + ', ' + EC.tr('solid') + ' ' + EC.f1(r.solid) + ')' : '—';
+          line.append(n, v); tip.appendChild(line);
+        }
+        tip.hidden = false;
+        const cx = x(k) + x.bandwidth() / 2, tw = tip.offsetWidth;
+        tip.style.left = Math.max(0, cx + 12 + tw > W ? cx - tw - 12 : cx + 12) + 'px'; tip.style.top = m.t + 'px';
+      })
+      .on('pointerleave', () => { tip.hidden = true; })
+      .on('click', (ev, k) => { if (o.onPick) o.onPick(new Date(k)); });
+  };
+</script>
+
+<script>
+  /* ---------- Язык, архив и устаревание: только классы и hidden ---------- */
+  for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.addEventListener('click', () => dash.setParams({lang: b.getAttribute('data-lang-btn')}));
+  for (const b of document.querySelectorAll('#dash-root [data-model-btn]')) b.addEventListener('click', () => dash.setParams({models: b.getAttribute('data-model-btn')}));
+  dash.onData(() => {
+    const en = EC.L() === 'en';
+    for (const r of document.querySelectorAll('#dash-root .ec')) r.classList.toggle('ec-en', en);
+    for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-lang-btn') === EC.L()));
+    const mdl = dash.params().models || 'both';
+    for (const b of document.querySelectorAll('#dash-root [data-model-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-model-btn') === mdl));
+    const run = dash.params().run || 'latest';
+    for (const p of document.querySelectorAll('#dash-root [data-pill="arch"]')) p.hidden = run === 'latest';
+    const age = dash.data('age_h');
+    for (const p of document.querySelectorAll('#dash-root [data-pill="stale"]')) p.hidden = !(age.status === 'ok' && age.data != null && age.data > 24);
+    const hits = dash.data('haz_hits');
+    const known = hits.status === 'ok' && hits.data != null;
+    for (const p of document.querySelectorAll('#dash-root [data-haz="none"]')) p.hidden = !(known && hits.data === 0);
+    for (const p of document.querySelectorAll('#dash-root [data-haz="some"]')) p.hidden = !(known && hits.data > 0);
+  });
+</script>
+
+<script>
+  /* ---------- Шапка ---------- */
+  const ecText = (name, fn) => dash.draw(name, (el) => { const v = fn(); el.textContent = v == null || v === '' ? '—' : v; });
+  ecText('p-start', () => { const v = EC.info('period_start_local'); const d = v && EC.parseT(v); return d ? EC.fmtDMH(d) : v; });
+  ecText('p-end', () => { const v = EC.info('period_end_local'); const d = v && EC.parseT(v); return d ? EC.fmtDMH(d) : v; });
+  ecText('ifs-init', () => (EC.info('ifs_init_utc') || '').replace('T', ' ').replace('Z', ''));
+  ecText('aifs-init', () => (EC.info('aifs_init_utc') || '').replace('T', ' ').replace('Z', ''));
+  ecText('req', () => EC.info('requested_local'));
+  ecText('lat', () => (EC.info('lat') || '').replace(',', '.'));
+  ecText('lon', () => (EC.info('lon') || '').replace(',', '.'));
+  ecText('elev', () => EC.info('elev_m'));
+  ecText('tcr', () => (EC.info('phase_threshold_c') || '').replace(',', '.'));
+  const ecPeriod = (m, f) => () => { const r = EC.rows('period').find((x) => x.model === m); return r ? EC.f1(r[f]) : null; };
+  ecText('ifs-tmax', ecPeriod('IFS', 'tmax_c'));
+  ecText('ifs-tmin', ecPeriod('IFS', 'tmin_c'));
+  ecText('aifs-tmin', ecPeriod('AIFS', 'tmin_c'));
+  ecText('aifs-tmax', ecPeriod('AIFS', 'tmax_c'));
+  ecText('ifs-p', ecPeriod('IFS', 'precip_mm'));
+  ecText('aifs-p', ecPeriod('AIFS', 'precip_mm'));
+  for (const [n, k] of [['thr-wind', 'wind'], ['thr-rain', 'rain12'], ['thr-snow', 'snow12'], ['thr-frost', 'frost'], ['thr-heat', 'heat']]) {
+    ecText(n, () => { const r = EC.rows('thr').find((x) => x.kind === k); return r ? EC.f0(r.threshold) : null; });
+  }
+
+  dash.draw('run-select', (sel) => {
+    const runs = EC.rows('runs');
+    const cur = dash.params().run || 'latest';
+    const opts = [new Option(EC.tr('latest'), 'latest')];
+    for (const r of runs) {
+      const lbl = (r.requested_local || r.run_id) + ' · IFS ' + (r.ifs_init_utc || '').slice(5, 16).replace('T', ' ') + ', AIFS ' + (r.aifs_init_utc || '').slice(5, 16).replace('T', ' ');
+      opts.push(new Option(lbl, r.run_id));
+    }
+    sel.replaceChildren(...opts);
+    sel.value = [...sel.options].some((o) => o.value === cur) ? cur : 'latest';
+    sel.onchange = () => dash.setParams({run: sel.value, day: null});
+  });
+
+  /* ---------- Опасные явления ---------- */
+  dash.draw('haz-list', (el) => {
+    el.replaceChildren();
+    if (!EC.ok('hazards')) return;
+    const unit = {wind: EC.tr('ms'), rain12: EC.tr('mm'), snow12: EC.tr('mm'), frost: EC.tr('c'), heat: EC.tr('c')};
+    const hits = EC.rows('hazards').filter((h) => h.exceeded === 1).sort((a, b) => (a.date_local + a.model < b.date_local + b.model ? -1 : 1));
+    for (const h of hits) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ec-hz-pill';
+      b.setAttribute('data-source', 'hazards'); b.setAttribute('data-field', 'value');
+      b.setAttribute('data-where', 'model=' + EC.enc(h.model) + '&date_local=' + EC.enc(h.date_local) + '&kind=' + EC.enc(h.kind));
+      const when = EC.parseT(h.when_local);
+      b.append(EC.bell(14), document.createTextNode(EC.dayLabel(h.date_local) + ' · ' + h.model + ' · ' + (EC.tr('kind')[h.kind] || h.kind) + ' ' + EC.f1(h.value) + ' ' + (unit[h.kind] || '') + (when ? ' (' + EC.fmtH(when) + ')' : '')));
+      b.addEventListener('click', () => { EC.pickDay(h.date_local); const t = document.querySelector('#dash-root #day'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+      el.appendChild(b);
+    }
+  });
+
+  /* ---------- Карточки дней ---------- */
+  dash.draw('days', (el) => {
+    if (!EC.state(el, 'daily')) return;
+    el.replaceChildren();
+    const daily = EC.rows('daily'), haz = EC.rows('hazards'), sel = EC.day();
+    for (const d of EC.dates()) {
+      const card = document.createElement('button');
+      card.type = 'button'; card.className = 'ec-day'; card.setAttribute('aria-pressed', String(d === sel));
+      const head = document.createElement('div'); head.className = 'ec-day-h';
+      const dd = document.createElement('span'); dd.className = 'ec-day-d'; dd.textContent = EC.dayLabel(d);
+      const wd = document.createElement('span'); wd.className = 'ec-day-w';
+      const pd = EC.parseD(d); wd.textContent = pd ? EC.TR[EC.L()].wd[pd.getUTCDay()] : '';
+      head.append(dd, wd);
+      if (haz.some((h) => h.date_local === d && h.exceeded === 1)) { const bell = document.createElement('span'); bell.className = 'ec-bell'; bell.appendChild(EC.bell(15)); head.appendChild(bell); }
+      card.appendChild(head);
+      const all = EC.dates(); const partial = d === all[0] || d === all[all.length - 1];
+      for (const mm of EC.ACT()) {
+        const r = daily.find((x) => x.model === mm.m && x.date_local === d);
+        const row = document.createElement('div'); row.className = 'ec-day-row';
+        const lab = document.createElement('span'); lab.className = 'ec-day-m'; lab.textContent = mm.m; lab.style.color = mm.color;
+        const t = document.createElement('span'); t.className = 'ec-day-t';
+        const mk = (field, txt) => { const s = document.createElement('span'); s.textContent = txt; s.setAttribute('data-source', 'daily'); s.setAttribute('data-field', field); s.setAttribute('data-where', 'model=' + mm.m + '&date_local=' + EC.enc(d)); return s; };
+        if (r) {
+          const w = EC.wx(r);
+          t.append(lab, mk('tmin_c', EC.f1(r.tmin_c)), document.createTextNode(' … '), mk('tmax_c', EC.f1(r.tmax_c)), document.createTextNode(' °C'));
+          const x2 = document.createElement('span'); x2.className = 'ec-day-x';
+          x2.append(mk('precip_mm', EC.f1(r.precip_mm)), document.createTextNode(' ' + EC.tr('mm') + ' · '), mk('wind_max_ms', EC.f1(r.wind_max_ms)), document.createTextNode(' ' + EC.tr('ms')));
+          row.append(EC.icon(w, mm.m + ': ' + EC.WX[w][EC.L() === 'en' ? 1 : 0]), t, x2);
+        } else { t.append(lab, document.createTextNode('—')); row.append(document.createElement('span'), t); }
+        card.appendChild(row);
+      }
+      if (partial) { const p = document.createElement('span'); p.className = 'ec-day-part'; p.textContent = EC.tr('part'); card.appendChild(p); }
+      card.addEventListener('click', () => EC.pickDay(d));
+      el.appendChild(card);
+    }
+  });
+
+  /* ---------- Весь период ---------- */
+  EC.band = () => { const d = EC.day(); const p = d && EC.parseD(d); return p ? [p, new Date(+p + 86400000)] : null; };
+  EC.toDay = (dt) => d3.utcFormat('%Y-%m-%d')(dt);
+  dash.draw('period-t', (el) => {
+    if (!EC.state(el, 'data')) return;
+    const data = EC.rows('data');
+    const series = EC.ACT().map((mm) => ({m: mm.m, color: mm.color, points: data.filter((r) => r.model === mm.m).map((r) => ({x: EC.parseT(r.local), y: r.t2m_c})).filter((p) => p.x)}));
+    EC.lineChart(el, {series, unit: EC.tr('c'), band: EC.band(), h: 230, aria: EC.tr('aT'), xFmt: EC.fmtDM,
+      xTicks: (n) => d3.utcDay.every(Math.max(1, Math.ceil(11 / n))), onPick: (dt) => EC.pickDay(EC.toDay(dt))});
+  });
+  dash.draw('period-p', (el) => {
+    if (!EC.state(el, 'daily')) return;
+    const rows = EC.rows('daily').map((r) => ({x: EC.parseD(r.date_local), m: r.model, liquid: r.liquid_mm, solid: r.solid_mm, total: r.precip_mm})).filter((r) => r.x);
+    const sel = EC.day();
+    EC.barChart(el, {rows, id: 'pp', h: 140, aria: EC.tr('aP'), xFmt: EC.fmtDM, tipFmt: (d) => EC.dayLabel(EC.toDay(d), true),
+      selKeys: (k) => EC.toDay(new Date(k)) === sel, onPick: (dt) => EC.pickDay(EC.toDay(dt))});
+  });
+
+  /* ---------- Роза ветров ---------- */
+  dash.draw('rose', (el) => {
+    if (!EC.state(el, 'wind_rose')) return;
+    el.replaceChildren();
+    const day = EC.day();
+    const rows = EC.rows('wind_rose').filter((r) => r.date_local === day);
+    const act = EC.ACT().filter((mm) => rows.some((r) => r.model === mm.m));
+    if (!act.length) { const n = document.createElement('div'); n.className = 'ec-fail'; n.textContent = EC.tr('none'); el.appendChild(n); return; }
+    const CLS = ['#4a8cc9', '#6fb6ee', '#a8daf8', '#f2faff'];
+    const tot = (m, dir) => rows.filter((r) => r.model === m && r.dir === dir).reduce((s, r) => s + r.pct, 0);
+    const maxTot = Math.max(5, ...act.flatMap((mm) => d3.range(8).map((d) => tot(mm.m, d))));
+    const W = Math.max(240, el.clientWidth || 600);
+    const per = Math.min(320, Math.floor((W - (act.length - 1) * 16) / Math.max(1, act.length)));
+    const size = Math.max(220, per);
+    const tip = document.createElement('div'); tip.className = 'ec-tip'; tip.hidden = true; el.appendChild(tip);
+    for (const mm of act) {
+      const fig = document.createElement('div'); fig.className = 'ec-rose';
+      fig.setAttribute('data-source', 'wind_rose');
+      const t = document.createElement('div'); t.className = 'ec-rose-t'; t.textContent = mm.m; t.style.color = mm.color;
+      fig.appendChild(t);
+      el.appendChild(fig);
+      const R = size / 2 - 26;
+      const r = d3.scaleLinear().domain([0, maxTot]).range([10, R]).nice();
+      const svg = d3.select(fig).append('svg').attr('width', size).attr('height', size).attr('role', 'img').attr('aria-label', EC.tr('aRose') + mm.m)
+        .append('g').attr('transform', `translate(${size / 2},${size / 2})`);
+      const ticks = r.ticks(3).filter((v) => v > 0);
+      svg.selectAll('circle.g').data(ticks).join('circle').attr('r', (v) => r(v)).attr('fill', 'none').attr('stroke', '#34485c');
+      for (let dd = 0; dd < 8; dd++) { const aa = dd * Math.PI / 4; svg.append('line').attr('x1', 0).attr('y1', 0).attr('x2', Math.sin(aa) * R).attr('y2', -Math.cos(aa) * R).attr('stroke', '#2a3a4b'); }
+      svg.selectAll('text.g').data(ticks).join('text').attr('x', 3).attr('y', (v) => -r(v) - 2).text((v) => v + '%');
+      const step = Math.PI / 4, pad = 0.06;
+      for (let dir = 0; dir < 8; dir++) {
+        let cum = 0;
+        for (let cls = 0; cls < 4; cls++) {
+          const rec = rows.find((q) => q.model === mm.m && q.dir === dir && q.cls === cls);
+          const v = rec ? rec.pct : 0;
+          if (v > 0) {
+            svg.append('path').attr('d', d3.arc().innerRadius(r(cum)).outerRadius(r(cum + v)).startAngle(dir * step - step / 2 + pad).endAngle(dir * step + step / 2 - pad)())
+              .attr('fill', CLS[cls]).attr('stroke', 'var(--color-panel)').attr('stroke-width', 0.6);
+          }
+          cum += v;
+        }
+        const a = dir * step;
+        svg.append('text').attr('x', Math.sin(a) * (R + 14)).attr('y', -Math.cos(a) * (R + 14)).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').text(EC.tr('dirs')[dir]);
+        svg.append('path').attr('d', d3.arc().innerRadius(0).outerRadius(R).startAngle(a - step / 2).endAngle(a + step / 2)()).attr('fill', 'transparent')
+          .on('pointerenter', (ev) => {
+            tip.replaceChildren();
+            const h = document.createElement('div'); const hb = document.createElement('b');
+            hb.textContent = mm.m + ' · ' + EC.tr('dirs')[dir] + ': ' + EC.f1(tot(mm.m, dir)) + ' %'; h.appendChild(hb); tip.appendChild(h);
+            for (let cls = 0; cls < 4; cls++) {
+              const rec = rows.find((q) => q.model === mm.m && q.dir === dir && q.cls === cls);
+              const line = document.createElement('div'); line.className = 'm';
+              line.textContent = EC.tr('cls')[cls] + ': ' + EC.f1(rec ? rec.pct : 0) + ' % (' + (rec ? rec.count : 0) + ' ' + EC.tr('times') + ')';
+              tip.appendChild(line);
+            }
+            tip.hidden = false;
+            const box = el.getBoundingClientRect(), fb = fig.getBoundingClientRect();
+            const cx = fb.left - box.left + fig.offsetWidth / 2 + Math.sin(a) * R * 0.6, cy = fb.top - box.top + 20 + size / 2 - Math.cos(a) * R * 0.6;
+            const tw = tip.offsetWidth;
+            tip.style.left = Math.max(0, Math.min(el.clientWidth - tw, cx + 10)) + 'px'; tip.style.top = Math.max(0, cy) + 'px';
+          })
+          .on('pointerleave', () => { tip.hidden = true; });
+      }
+    }
+  });
+
+  /* ---------- Выбранный день ---------- */
+  dash.draw('day-name', (el) => { const d = EC.day(); el.textContent = d ? EC.dayLabel(d, true) : '—'; });
+  const ecDayLine = (name, field, unitKey, opts) => dash.draw(name, (el) => {
+    if (!EC.state(el, 'data')) return;
+    const d = EC.day(); const b = EC.band();
+    const data = EC.rows('data').filter((r) => r.local && r.local.slice(0, 10) === d);
+    const series = EC.ACT().map((mm) => ({m: mm.m, color: mm.color, points: data.filter((r) => r.model === mm.m).map((r) => ({x: EC.parseT(r.local), y: r[field]})).filter((p) => p.x)}));
+    EC.lineChart(el, Object.assign({series, unit: EC.tr(unitKey), h: 190, dots: true, xDomain: b || undefined, xFmt: EC.fmtH, tickW: 52,
+      xTicks: (n) => d3.utcHour.every(n >= 8 ? 3 : n >= 4 ? 6 : 12), aria: EC.tr('aDay') + field}, opts || {}));
+  });
+  dash.draw('day-t', (el) => {
+    if (!EC.state(el, 'data')) return;
+    const d = EC.day(); const b = EC.band();
+    const data = EC.rows('data').filter((r) => r.local && r.local.slice(0, 10) === d);
+    const series = [];
+    for (const mm of EC.ACT()) {
+      const rs = data.filter((r) => r.model === mm.m);
+      series.push({m: mm.m, label: mm.m + ' T', color: mm.color, points: rs.map((r) => ({x: EC.parseT(r.local), y: r.t2m_c})).filter((p) => p.x)});
+      series.push({m: mm.m, label: mm.m + ' Td', color: mm.color, dash: true, points: rs.map((r) => ({x: EC.parseT(r.local), y: r.td2m_c})).filter((p) => p.x)});
+    }
+    EC.lineChart(el, {series, unit: EC.tr('c'), h: 190, dots: true, xDomain: b || undefined, xFmt: EC.fmtH, tickW: 52,
+      xTicks: (n) => d3.utcHour.every(n >= 8 ? 3 : n >= 4 ? 6 : 12), aria: EC.tr('aDayT')});
+  });
+  ecDayLine('day-msl', 'msl_hpa', 'hpa');
+  ecDayLine('day-rh', 'rh_pct', 'pct', {yDomain: [0, 100], vFmt: EC.f0});
+  ecDayLine('day-w', 'wind_ms', 'ms', {zero: true});
+  ecDayLine('day-c', 'tcc_pct', 'pct', {yDomain: [0, 100], vFmt: EC.f0});
+  dash.draw('day-p', (el) => {
+    if (!EC.state(el, 'precip6')) return;
+    const d = EC.day();
+    const rows = EC.rows('precip6').filter((r) => r.date_local === d).map((r) => ({x: EC.parseT(r.local), m: r.model, liquid: r.liquid_mm, solid: r.solid_mm, total: r.precip_mm})).filter((r) => r.x);
+    EC.barChart(el, {rows, id: 'dp', h: 190, aria: EC.tr('aDay') + 'precip', xFmt: EC.fmtH, tipFmt: EC.fmtDMH});
+  });
+
+  /* ---------- Расхождение моделей ---------- */
+  dash.draw('diff-var', (sel) => {
+    const names = EC.L() === 'en'
+      ? [['t2m_c', 'Air temperature, °C'], ['precip_mm', 'Precipitation per 6 h, mm'], ['msl_hpa', 'Sea-level pressure, hPa'], ['rh_pct', 'Relative humidity, %'], ['wind_ms', 'Wind speed, m/s']]
+      : [['t2m_c', 'Температура воздуха, °C'], ['precip_mm', 'Осадки за 6 ч, мм'], ['msl_hpa', 'Давление на уровне моря, гПа'], ['rh_pct', 'Относительная влажность, %'], ['wind_ms', 'Скорость ветра, м/с']];
+    sel.replaceChildren(...names.map(([v, t]) => new Option(t, v)));
+    sel.value = dash.params().dvar || 't2m_c';
+    sel.onchange = () => dash.setParams({dvar: sel.value});
+  });
+  dash.draw('diff-chart', (el) => {
+    if (!EC.state(el, 'diff_series')) return;
+    const f = dash.params().dvar || 't2m_c';
+    const unit = {t2m_c: EC.tr('c'), precip_mm: EC.tr('mm'), msl_hpa: EC.tr('hpa'), rh_pct: EC.tr('pct'), wind_ms: EC.tr('ms')}[f] || '';
+    const pts = EC.rows('diff_series').map((r) => ({x: EC.parseT(r.local), y: r[f]})).filter((p) => p.x);
+    EC.lineChart(el, {series: [{m: EC.tr('diff'), color: 'var(--color-fg)', points: pts}], unit, zero: true, dots: true, h: 210, band: EC.band(),
+      aria: EC.tr('aDiff'), xFmt: EC.fmtDM, xTicks: (n) => d3.utcDay.every(Math.max(1, Math.ceil(11 / n))), onPick: (dt) => EC.pickDay(EC.toDay(dt))});
+  });
+  dash.draw('diff-table', (tb) => {
+    tb.replaceChildren();
+    if (!EC.ok('diff_daily')) return;
+    const sel = EC.day();
+    for (const r of EC.rows('diff_daily')) {
+      const tr = document.createElement('tr'); tr.setAttribute('data-key', EC.enc(r.date_local));
+      if (r.date_local === sel) tr.className = 'sel';
+      const td0 = document.createElement('td'); td0.className = 'l'; td0.textContent = EC.dayLabel(r.date_local); tr.appendChild(td0);
+      for (const k of ['d_tmax', 'd_tmin', 'd_precip', 'd_wind', 'd_rh']) {
+        const td = document.createElement('td'); const v = r[k];
+        td.textContent = v == null ? '—' : (v > 0 ? '+' : '') + (k === 'd_rh' ? EC.f0(v) : EC.f1(v));
+        if (v > 0) td.className = 'ec-pos'; else if (v < 0) td.className = 'ec-neg';
+        tr.appendChild(td);
+      }
+      tr.style.cursor = 'pointer'; tr.addEventListener('click', () => EC.pickDay(r.date_local));
+      tb.appendChild(tr);
+    }
+  });
+
+  /* ---------- Таблица проверок ---------- */
+  dash.draw('haz-table', (tb) => {
+    tb.replaceChildren();
+    if (!EC.ok('hazards')) return;
+    const unit = {wind: EC.tr('ms'), rain12: EC.tr('mm'), snow12: EC.tr('mm'), frost: EC.tr('c'), heat: EC.tr('c')};
+    const hits = EC.rows('hazards').filter((h) => h.exceeded === 1).sort((a, b) => (a.date_local + a.model < b.date_local + b.model ? -1 : 1));
+    for (const h of hits) {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-key', [h.model, h.date_local, h.kind].map(EC.enc).join(','));
+      const when = EC.parseT(h.when_local);
+      const cells = [[EC.dayLabel(h.date_local), 'l'], [h.model, 'l'], [EC.tr('kind')[h.kind] || h.kind, 'l'],
+        [EC.f1(h.value) + ' ' + (unit[h.kind] || ''), ''], [when ? EC.fmtH(when) : (h.when_local || '—'), 'l']];
+      for (const [t, c] of cells) { const td = document.createElement('td'); td.textContent = t; if (c) td.className = c; tr.appendChild(td); }
+      tr.style.cursor = 'pointer'; tr.addEventListener('click', () => EC.pickDay(h.date_local));
+      tb.appendChild(tr);
+    }
+  });
+</script>
+</div>
+</body>
+</html>
