@@ -3,29 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Прогноз ECMWF: Ташкент</title>
+<title>Прогноз ECMWF: Ташкент и Чимган</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A6%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
-  /* Значения оформления, которые на claude.ai задаёт движок дашбордов */
-  :root {
-    --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
-    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
-    --cds-radius: 8px; --cds-font-weight-medium: 500;
-    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
-    --cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
-    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-anthropic-serif: Georgia, "Times New Roman", serif;
-    color-scheme: dark; background: #0b1219;
-  }
-  html, body { margin: 0; background: #0b1219; }
-  #dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
-    appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
-  .dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
-  @keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
-  @media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
-  a { color: #81cffe; }
+/* Значения оформления, которые на claude.ai задаёт движок дашбордов */
+:root {
+--cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
+--cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+--cds-radius: 8px; --cds-font-weight-medium: 500;
+--cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
+--cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
+--font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-anthropic-serif: Georgia, "Times New Roman", serif;
+color-scheme: dark; background: #0b1219;
+}
+html, body { margin: 0; background: #0b1219; }
+#dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
+appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+.dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
+@keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
+a { color: #81cffe; }
 </style>
 <script src="dash-gh.js"></script>
 </head>
@@ -82,7 +82,7 @@
   .ec-hz-none { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-ok); }
   /* Дни */
   .ec-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--cds-gap-sm); }
-  .ec-days { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--cds-gap-md); }
+  .ec-days { grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: var(--cds-gap-md); }
   .ec-day { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 10px; min-width: 0;
     padding: var(--cds-pad-md) var(--cds-pad-md) calc(var(--cds-pad-md) + 2px);
     background: linear-gradient(180deg, #1c2b3a 0%, #131e28 100%); border: 1px solid #2c3b4b; border-radius: calc(var(--cds-radius) + 4px);
@@ -147,6 +147,7 @@
   .ec-foot { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
   .ec-foot p { margin: 0; max-width: 90ch; }
   .ec-foot a { color: #81cffe; text-decoration: underline; text-underline-offset: 2px; }
+  .ec-noplace { margin: 0; padding: var(--cds-pad-sm) var(--cds-pad-md); border-radius: var(--cds-radius); background: #e0c050; color: #1a1406; font-size: var(--cds-font-size-body); max-width: 72ch; }
   @media (max-width: 520px) { .ec-top { flex-direction: column-reverse; align-items: flex-end; } .ec-title { align-self: stretch; } }
 </style>
 
@@ -163,7 +164,7 @@
 </svg>
   <header class="ec-head" id="top">
     <div class="ec-top">
-      <h1 class="ec-title"><span data-l="ru">Прогноз ECMWF: Ташкент</span><span data-l="en" lang="en">ECMWF forecast: Tashkent</span></h1>
+      <h1 class="ec-title"><span data-l="ru">Прогноз ECMWF:</span><span data-l="en" lang="en">ECMWF forecast:</span> <span data-draw="place-name">—</span></h1>
       <div class="ec-lang" role="group" aria-label="Язык / Language">
         <button type="button" class="ec-lang-btn" data-lang-btn="ru" aria-pressed="true" lang="ru">RU</button>
         <button type="button" class="ec-lang-btn" data-lang-btn="en" aria-pressed="false" lang="en">EN</button>
@@ -172,6 +173,10 @@
     <p class="ec-lead" data-l="ru" data-read lang="ru">С <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> по <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b> температура воздуха по <span class="ec-ifs">IFS</span> — от <b data-draw="ifs-tmin" data-source="period" data-field="tmin_c" data-where="model=IFS">—</b> до <b data-draw="ifs-tmax" data-source="period" data-field="tmax_c" data-where="model=IFS">—</b> °C, по <span class="ec-aifs">AIFS</span> — от <b data-draw="aifs-tmin" data-source="period" data-field="tmin_c" data-where="model=AIFS">—</b> до <b data-draw="aifs-tmax" data-source="period" data-field="tmax_c" data-where="model=AIFS">—</b> °C. Сумма осадков за период: IFS <b data-draw="ifs-p" data-source="period" data-field="precip_mm" data-where="model=IFS">—</b> мм, AIFS <b data-draw="aifs-p" data-source="period" data-field="precip_mm" data-where="model=AIFS">—</b> мм.</p>
     <p class="ec-lead" data-l="en" data-read lang="en">From <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> to <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b>, air temperature ranges from <b data-draw="ifs-tmin" data-source="period" data-field="tmin_c" data-where="model=IFS">—</b> to <b data-draw="ifs-tmax" data-source="period" data-field="tmax_c" data-where="model=IFS">—</b> °C in <span class="ec-ifs">IFS</span> and from <b data-draw="aifs-tmin" data-source="period" data-field="tmin_c" data-where="model=AIFS">—</b> to <b data-draw="aifs-tmax" data-source="period" data-field="tmax_c" data-where="model=AIFS">—</b> °C in <span class="ec-aifs">AIFS</span>. Total precipitation for the period: IFS <b data-draw="ifs-p" data-source="period" data-field="precip_mm" data-where="model=IFS">—</b> mm, AIFS <b data-draw="aifs-p" data-source="period" data-field="precip_mm" data-where="model=AIFS">—</b> mm.</p>
     <div class="ec-run">
+      <span class="ec-models ec-places" role="group" aria-label="Пункт / Place">
+        <button type="button" data-place-btn="Tashkent" aria-pressed="true"><span data-l="ru">Ташкент</span><span data-l="en" lang="en">Tashkent</span></button>
+        <button type="button" data-place-btn="Chimgan" aria-pressed="false"><span data-l="ru">Чимган</span><span data-l="en" lang="en">Chimgan</span></button>
+      </span>
       <label class="ec-run-label" for="run-select"><span data-l="ru">Показан расчёт</span><span data-l="en" lang="en">Run shown</span></label>
       <select class="dash-select" id="run-select" data-draw="run-select" data-source="runs" aria-label="Расчёт / Run"></select>
       <span class="ec-pill ec-pill-arch" data-pill="arch" hidden><span data-l="ru">Архивный расчёт</span><span data-l="en" lang="en">Archived run</span></span>
@@ -182,8 +187,9 @@
       </span>
       <span class="ec-pill ec-pill-stale" data-pill="stale" hidden><span data-l="ru">Прогноз устарел: расчёту больше суток</span><span data-l="en" lang="en">Forecast is out of date: run is over a day old</span></span>
     </div>
-    <p class="ec-meta" data-l="ru">Запуск моделей (UTC): <span class="ec-ifs">IFS</span> <span data-draw="ifs-init" data-source="info" data-field="value" data-where="key=ifs_init_utc">—</span>, <span class="ec-aifs">AIFS</span> <span data-draw="aifs-init" data-source="info" data-field="value" data-where="key=aifs_init_utc">—</span> · расчёт выполнен <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> по Ташкенту · точка <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° с. ш., <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° в. д., высота <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> м · время на странице — ташкентское (UTC+5)</p>
-    <p class="ec-meta" data-l="en" lang="en">Model runs (UTC): <span class="ec-ifs">IFS</span> <span data-draw="ifs-init" data-source="info" data-field="value" data-where="key=ifs_init_utc">—</span>, <span class="ec-aifs">AIFS</span> <span data-draw="aifs-init" data-source="info" data-field="value" data-where="key=aifs_init_utc">—</span> · computed <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> Tashkent time · point <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° N, <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° E, elevation <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> m · all times on this page are Tashkent time (UTC+5)</p>
+    <p class="ec-meta" data-l="ru">Запуск моделей (UTC): <span class="ec-ifs">IFS</span> <span data-draw="ifs-init" data-source="info" data-field="value" data-where="key=ifs_init_utc">—</span>, <span class="ec-aifs">AIFS</span> <span data-draw="aifs-init" data-source="info" data-field="value" data-where="key=aifs_init_utc">—</span> · расчёт выполнен <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> по Ташкенту · точка <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° с. ш., <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° в. д., высота <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> м<span data-node hidden> · узел сетки <span data-draw="node-lat" data-source="info" data-field="value" data-where="key=node_lat">—</span>° с. ш., <span data-draw="node-lon" data-source="info" data-field="value" data-where="key=node_lon">—</span>° в. д., высота рельефа модели: IFS <span data-draw="node-ifs" data-source="info" data-field="value" data-where="key=node_elev_ifs_m">—</span> м, AIFS <span data-draw="node-aifs" data-source="info" data-field="value" data-where="key=node_elev_aifs_m">—</span> м</span> · время на странице — ташкентское (UTC+5)</p>
+    <p class="ec-meta" data-l="en" lang="en">Model runs (UTC): <span class="ec-ifs">IFS</span> <span data-draw="ifs-init" data-source="info" data-field="value" data-where="key=ifs_init_utc">—</span>, <span class="ec-aifs">AIFS</span> <span data-draw="aifs-init" data-source="info" data-field="value" data-where="key=aifs_init_utc">—</span> · computed <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> Tashkent time · point <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° N, <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° E, elevation <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> m<span data-node hidden> · grid node <span data-draw="node-lat" data-source="info" data-field="value" data-where="key=node_lat">—</span>° N, <span data-draw="node-lon" data-source="info" data-field="value" data-where="key=node_lon">—</span>° E, model terrain height: IFS <span data-draw="node-ifs" data-source="info" data-field="value" data-where="key=node_elev_ifs_m">—</span> m, AIFS <span data-draw="node-aifs" data-source="info" data-field="value" data-where="key=node_elev_aifs_m">—</span> m</span> · all times on this page are Tashkent time (UTC+5)</p>
+    <p class="ec-noplace" data-noplace hidden><span data-l="ru">Для этого пункта расчётов пока нет: они появятся после следующего запуска блокнота.</span><span data-l="en" lang="en">There are no runs for this place yet: they will appear after the next notebook run.</span></p>
   </header>
 
   <section class="ec-sec" id="hazards">
@@ -299,7 +305,7 @@
     <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
     <ul class="ec-notes" data-l="ru">
       <li>Критерии опасных явлений. Проверяются по каждой модели отдельно: ветер от <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> м/с, жидкие осадки от <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> мм за 12 ч, твёрдые от <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> мм за 12 ч, мороз до <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C и ниже, жара от <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C. Для осадков берётся наибольшая сумма за 12 ч в течение суток.</li>
-      <li>Открытые оперативные прогнозы ECMWF: IFS (физическая модель) и AIFS Single (модель на основе машинного обучения), сетка 0.25°. Берётся ближайший к точке узел сетки. Данные готовит блокнот Colab и записывает в файл data.json рядом с этой страницей (последние 30 расчётов); страница читает его при открытии.</li>
+      <li>Открытые оперативные прогнозы ECMWF: IFS (физическая модель) и AIFS Single (модель на основе машинного обучения), сетка 0.25°. Берётся ближайший к пункту узел сетки. Высота рельефа модели в узле может заметно отличаться от высоты пункта, особенно в горах (Чимган); поправка температуры на высоту не вводится, обе высоты указаны в шапке. Данные готовит блокнот Colab и записывает в файл data.json рядом с этой страницей (последние 30 расчётов на пункт); страница читает его при открытии.</li>
       <li>Сутки считаются по ташкентскому времени. Срок относится к суткам, в которые он закончился; так же и осадки за интервал.</li>
       <li>Фаза осадков. AIFS: твёрдые — снегопад самой модели. IFS: поля снегопада нет, поэтому осадки при температуре ниже пороговой (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C для высоты точки) считаются твёрдыми.</li>
       <li>Значок погоды дня: при осадках от 0.5 мм за сутки — дождь, снег (твёрдые не менее 70 % суммы) или дождь со снегом; без осадков — по средней облачности за сутки: менее 30 % ясно, 30–70 % переменная облачность, 70 % и более пасмурно.</li>
@@ -308,7 +314,7 @@
     </ul>
     <ul class="ec-notes" data-l="en" lang="en">
       <li>Hazard criteria. Checked for each model separately: wind of <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> m/s or more, liquid precipitation of <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> mm or more in 12 h, solid of <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> mm or more in 12 h, frost of <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C or colder, heat of <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C or more. For precipitation, the highest 12-hour total within the day is used.</li>
-      <li>ECMWF open real-time forecasts: IFS (physics-based model) and AIFS Single (machine-learning model), 0.25° grid. The grid node nearest to the point is used. A Colab notebook prepares the data and writes it to the data.json file next to this page (the latest 30 runs); the page reads it when opened.</li>
+      <li>ECMWF open real-time forecasts: IFS (physics-based model) and AIFS Single (machine-learning model), 0.25° grid. The grid node nearest to the place is used. The model terrain height at the node can differ markedly from the place's elevation, especially in the mountains (Chimgan); no elevation correction is applied to temperature, and both heights are shown in the header. A Colab notebook prepares the data and writes it to the data.json file next to this page (the latest 30 runs per place); the page reads it when opened.</li>
       <li>Days are Tashkent calendar days. A forecast time, and the precipitation of the interval ending at it, belongs to the day in which it ends.</li>
       <li>Precipitation phase. AIFS: solid is the model's own snowfall. IFS has no snowfall field, so precipitation below the threshold temperature (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C for the point's elevation) counts as solid.</li>
       <li>Day weather icon: with 0.5 mm or more of precipitation in the day — rain, snow (solid at least 70 % of the total) or rain and snow; without precipitation — by mean daily cloud cover: under 30 % clear, 30–70 % partly cloudy, 70 % or more overcast.</li>
@@ -326,10 +332,10 @@
   /* ---------- Данные: файл с расчётами (набор src); страница выбирает лист по своим параметрам ---------- */
   dash.calc('runs', {
     title: "Список сохранённых расчётов",
-    description: "Расчёты в файле: время расчёта, запуски IFS и AIFS, период и файл Excel. Из файла данных дашборда.",
+    description: "Расчёты в файле по пунктам: время расчёта, запуски IFS и AIFS, период и файл Excel. Из файла данных дашборда.",
     inputs: ['src'],
     fn: (src) => {
-      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key", "place", "place_ru", "place_en"]); const fixT = (s) => s;
       const name = 'runs';
       const sheet = (src && src.alias && src.alias[name]) || name;
       const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['runs'];
@@ -351,13 +357,14 @@
   });
   dash.calc('info', {
     title: "Сведения о расчёте",
-    description: "Время расчёта и запусков моделей, период прогноза, координаты и высота точки, пороговая температура фазы осадков. Из файла данных дашборда.",
+    description: "Для выбранного пункта и расчёта: время расчёта и запусков моделей, период прогноза, координаты и высота пункта, узел сетки и высота рельефа модели в нём, пороговая температура фазы осадков. Из файла данных дашборда.",
     inputs: ['src'],
     fn: (src) => {
-      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
-      const p = dash.params(); const name = p.run || 'latest';
-      const sheet = (src && src.alias && src.alias[name]) || name;
-      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['info'];
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key", "place", "place_ru", "place_en"]); const fixT = (s) => s;
+      const p = dash.params(); const name = (p.place || 'Tashkent') + '_' + (p.run || 'latest');
+      const pick = (n) => { const sh = (src && src.alias && src.alias[n]) || n; return src && src.sheets && src.sheets[sh] && src.sheets[sh]['info']; };
+      let values = pick(name);
+      if ((!Array.isArray(values) || !values.length) && /^Tashkent_/.test(name)) values = pick(name.replace(/^Tashkent_/, ''));
       if (!Array.isArray(values) || !values.length) return [];
       const columns = values[0].map(String);
       const info = columns[0] === 'key' && columns[1] === 'value';
@@ -376,13 +383,14 @@
   });
   dash.calc('data', {
     title: "Значения IFS и AIFS по срокам",
-    description: "Температура, точка росы, влажность, ветер, давление, осадки (жидкие и твёрдые) и облачность в каждый срок прогноза обеих моделей. Из файла данных дашборда.",
+    description: "Для выбранного пункта и расчёта: температура, точка росы, влажность, ветер, давление, осадки (жидкие и твёрдые) и облачность в каждый срок прогноза обеих моделей. Из файла данных дашборда.",
     inputs: ['src'],
     fn: (src) => {
-      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
-      const p = dash.params(); const name = p.run || 'latest';
-      const sheet = (src && src.alias && src.alias[name]) || name;
-      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['data'];
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key", "place", "place_ru", "place_en"]); const fixT = (s) => s;
+      const p = dash.params(); const name = (p.place || 'Tashkent') + '_' + (p.run || 'latest');
+      const pick = (n) => { const sh = (src && src.alias && src.alias[n]) || n; return src && src.sheets && src.sheets[sh] && src.sheets[sh]['data']; };
+      let values = pick(name);
+      if ((!Array.isArray(values) || !values.length) && /^Tashkent_/.test(name)) values = pick(name.replace(/^Tashkent_/, ''));
       if (!Array.isArray(values) || !values.length) return [];
       const columns = values[0].map(String);
       const info = columns[0] === 'key' && columns[1] === 'value';
@@ -401,13 +409,14 @@
   });
   dash.calc('daily', {
     title: "Сводка по суткам",
-    description: "Для каждой модели и суток по ташкентскому времени: температура, осадки, наибольший ветер, средние влажность, давление и облачность. Из файла данных дашборда.",
+    description: "Для выбранного пункта, каждой модели и суток по ташкентскому времени: температура, осадки, наибольший ветер, средние влажность, давление и облачность. Из файла данных дашборда.",
     inputs: ['src'],
     fn: (src) => {
-      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
-      const p = dash.params(); const name = p.run || 'latest';
-      const sheet = (src && src.alias && src.alias[name]) || name;
-      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['daily'];
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key", "place", "place_ru", "place_en"]); const fixT = (s) => s;
+      const p = dash.params(); const name = (p.place || 'Tashkent') + '_' + (p.run || 'latest');
+      const pick = (n) => { const sh = (src && src.alias && src.alias[n]) || n; return src && src.sheets && src.sheets[sh] && src.sheets[sh]['daily']; };
+      let values = pick(name);
+      if ((!Array.isArray(values) || !values.length) && /^Tashkent_/.test(name)) values = pick(name.replace(/^Tashkent_/, ''));
       if (!Array.isArray(values) || !values.length) return [];
       const columns = values[0].map(String);
       const info = columns[0] === 'key' && columns[1] === 'value';
@@ -426,13 +435,14 @@
   });
   dash.calc('hazards', {
     title: "Проверка опасных явлений",
-    description: "Для каждой модели, суток и явления: наибольшее значение, порог и превышен ли он. Из файла данных дашборда.",
+    description: "Для выбранного пункта, каждой модели, суток и явления: наибольшее значение, порог и превышен ли он. Из файла данных дашборда.",
     inputs: ['src'],
     fn: (src) => {
-      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key"]); const fixT = (s) => s;
-      const p = dash.params(); const name = p.run || 'latest';
-      const sheet = (src && src.alias && src.alias[name]) || name;
-      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['hazards'];
+      const TEXT = new Set(["model", "valid_utc", "local", "date_local", "kind", "unit", "when_local", "run_id", "requested_local", "ifs_init_utc", "aifs_init_utc", "period_start_local", "period_end_local", "file", "key", "place", "place_ru", "place_en"]); const fixT = (s) => s;
+      const p = dash.params(); const name = (p.place || 'Tashkent') + '_' + (p.run || 'latest');
+      const pick = (n) => { const sh = (src && src.alias && src.alias[n]) || n; return src && src.sheets && src.sheets[sh] && src.sheets[sh]['hazards']; };
+      let values = pick(name);
+      if ((!Array.isArray(values) || !values.length) && /^Tashkent_/.test(name)) values = pick(name.replace(/^Tashkent_/, ''));
       if (!Array.isArray(values) || !values.length) return [];
       const columns = values[0].map(String);
       const info = columns[0] === 'key' && columns[1] === 'value';
@@ -449,6 +459,7 @@
       });
     },
   });
+
 
   /* ---------- Расчёты ---------- */
   dash.calc('period', {
@@ -608,6 +619,9 @@
   EC.fmtH = d3.utcFormat('%H:%M');
   EC.fmtDM = d3.utcFormat('%d.%m');
   EC.fmtDMH = d3.utcFormat('%d.%m %H:%M');
+  EC.PLACES = {Tashkent: ['Ташкент', 'Tashkent'], Chimgan: ['Чимган', 'Chimgan']};
+  EC.place = () => (EC.PLACES[dash.params().place] ? dash.params().place : 'Tashkent');
+  EC.placeRuns = () => EC.rows('runs').filter((r) => (r.place || 'Tashkent') === EC.place());
   EC.info = (k) => { const r = EC.rows('info').find((x) => x.key === k); return r ? r.value : null; };
   EC.dates = () => {
     const s = new Set(EC.rows('daily').map((r) => r.date_local));
@@ -792,10 +806,16 @@
   /* ---------- Язык, архив и устаревание: только классы и hidden ---------- */
   for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.addEventListener('click', () => dash.setParams({lang: b.getAttribute('data-lang-btn')}));
   for (const b of document.querySelectorAll('#dash-root [data-model-btn]')) b.addEventListener('click', () => dash.setParams({models: b.getAttribute('data-model-btn')}));
+  for (const b of document.querySelectorAll('#dash-root [data-place-btn]')) b.addEventListener('click', () => dash.setParams({place: b.getAttribute('data-place-btn'), day: null}));
   dash.onData(() => {
     const en = EC.L() === 'en';
     for (const r of document.querySelectorAll('#dash-root .ec')) r.classList.toggle('ec-en', en);
     for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-lang-btn') === EC.L()));
+    for (const b of document.querySelectorAll('#dash-root [data-place-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-place-btn') === EC.place()));
+    const runsOk = dash.data('runs').status === 'ok';
+    for (const p of document.querySelectorAll('#dash-root [data-noplace]')) p.hidden = !(runsOk && !EC.placeRuns().length);
+    const infoOk = dash.data('info').status === 'ok';
+    for (const p of document.querySelectorAll('#dash-root [data-node]')) p.hidden = !(infoOk && EC.info('node_lat'));
     const mdl = dash.params().models || 'both';
     for (const b of document.querySelectorAll('#dash-root [data-model-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-model-btn') === mdl));
     const run = dash.params().run || 'latest';
@@ -820,6 +840,12 @@
   ecText('lat', () => (EC.info('lat') || '').replace(',', '.'));
   ecText('lon', () => (EC.info('lon') || '').replace(',', '.'));
   ecText('elev', () => EC.info('elev_m'));
+  ecText('place-name', () => { const r = EC.info(EC.L() === 'en' ? 'place_en' : 'place_ru'); return r || EC.PLACES[EC.place()][EC.L() === 'en' ? 1 : 0]; });
+  const ecDeg = (k) => { const v = Number(String(EC.info(k) || '').replace(',', '.')); return EC.info(k) && Number.isFinite(v) ? v.toFixed(2) : null; };
+  ecText('node-lat', () => ecDeg('node_lat'));
+  ecText('node-lon', () => ecDeg('node_lon'));
+  ecText('node-ifs', () => EC.info('node_elev_ifs_m') || '—');
+  ecText('node-aifs', () => EC.info('node_elev_aifs_m') || '—');
   ecText('tcr', () => (EC.info('phase_threshold_c') || '').replace(',', '.'));
   const ecPeriod = (m, f) => () => { const r = EC.rows('period').find((x) => x.model === m); return r ? EC.f1(r[f]) : null; };
   ecText('ifs-tmax', ecPeriod('IFS', 'tmax_c'));
@@ -833,7 +859,7 @@
   }
 
   dash.draw('run-select', (sel) => {
-    const runs = EC.rows('runs');
+    const runs = EC.placeRuns();
     const cur = dash.params().run || 'latest';
     const opts = [new Option(EC.tr('latest'), 'latest')];
     for (const r of runs) {
