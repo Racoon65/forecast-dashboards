@@ -4,164 +4,184 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Прогноз WeatherNext 3: Ташкент и Чимган</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A4%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A6%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
-  /* Значения оформления, которые на claude.ai задаёт движок дашбордов */
-  :root {
-    --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
-    --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
-    --cds-radius: 8px; --cds-font-weight-medium: 500;
-    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
-    --cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
-    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-anthropic-serif: Georgia, "Times New Roman", serif;
-    color-scheme: dark; background: #0b1219;
-  }
-  html, body { margin: 0; background: #0b1219; }
-  #dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
-    appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
-  .dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
-  @keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
-  @media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
-  a { color: #81cffe; }
+/* Значения оформления, которые на claude.ai задаёт движок дашбордов */
+:root {
+--cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
+--cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+--cds-radius: 8px; --cds-font-weight-medium: 500;
+--cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
+--cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
+--font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-anthropic-serif: Georgia, "Times New Roman", serif;
+color-scheme: dark; background: #0b1219;
+}
+html, body { margin: 0; background: #0b1219; }
+#dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
+appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+.dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
+@keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
+a { color: #81cffe; }
 </style>
 <script src="dash-gh.js"></script>
 </head>
 <body>
 <div id="dash-root">
 <style>
-  /* Тёмная страница в одном стиле с дашбордами ECMWF и осадков на водосборы: одинаково при любой теме приложения. */
+  /* Тёмная страница в одном стиле с другими дашбордами прогнозов; одинаково при любой теме приложения. */
   #dash-root { --dash-gutter: 0; }
   .ec {
-    --color-fg: #f0efec; --color-fg-muted: #9aa3ad; --color-bg: #0b1219; --color-panel: #15202b; --color-border-line: #2a3644;
-    --color-ok: #2fbf71; --color-warn: #e0a030; --color-bad: #ec7e7e;
-    --cds-text-secondary: #9aa3ad; --cds-chart-grid: #1f2b38; --cds-chart-axis: #4a5868; --cds-chart-reference: #56677a;
-    --cds-surface-popover: #1b2835; --cds-border: #33414f; --cds-shadow-popover: 0 4px 14px rgba(0, 0, 0, .5);
-    /* Среднее по ансамблю — голубой, разброс — полупрозрачные полосы того же цвета; варианты прогноза — свои цвета */
-    --c-main: #5aa9f0; --c-sp90: rgba(90, 169, 240, .20); --c-sp75: rgba(90, 169, 240, .38);
-    --c-sh: #f0a35a; --c-imerg: #c39af2; --c-exp: #4fd1a5; --c-td: #9fd9a8;
-    --c-band: rgba(129, 207, 254, .10); --c-haz: #ff8a5c;
+    --color-fg: #eef1f4; --color-fg-muted: #a7b1bc; --color-fg-faint: #7d8996; --color-bg: #0b1219; --color-panel: #131d28; --color-panel-2: #182533; --color-border-line: #263343;
+    --cds-text-secondary: #a7b1bc; --cds-chart-grid: #1e2a37; --cds-chart-axis: #455467; --cds-chart-reference: #6a7c90;
+    --cds-surface-popover: #1b2835; --cds-border: #33414f; --cds-shadow-popover: 0 6px 18px rgba(0, 0, 0, .55);
+    --c-accent: #81cffe; --c-temp: #f2a65a; --c-temp-90: rgba(242, 166, 90, .16); --c-temp-75: rgba(242, 166, 90, .34);
+    --c-td: #9fd9a8; --c-rain: #5aa9f0; --c-wind: #7fd3e6; --c-wind-90: rgba(127, 211, 230, .16); --c-cloud: #8796a8;
+    --c-msl: #b7c4d1; --c-rh: #6fb6ee; --c-sun: #f2c14e; --c-band: rgba(129, 207, 254, .08);
+    --c-main: #5aa9f0; --c-sh: #c39af2; --c-imerg: #c39af2; --c-exp: #4fd1a5; --c-haz: #ff8a5c; --color-ok: #4fd18b;
+    --c-sp90: rgba(90, 169, 240, .20); --c-sp75: rgba(90, 169, 240, .38);
     color-scheme: dark; background: var(--color-bg); color: var(--color-fg);
-    padding-block: var(--cds-pad-lg); padding-left: max(16px, var(--cds-pad-lg)); padding-right: max(16px, var(--cds-pad-lg));
-    display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+    display: flex; flex-direction: column; gap: 28px; padding-bottom: 28px;
+    font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+  .ec [hidden] { display: none !important; }
   .ec:not(.ec-en) [data-l="en"] { display: none !important; }
   .ec.ec-en [data-l="ru"] { display: none !important; }
-  .ec .dash-select { background-color: var(--color-panel); color: var(--color-fg); border-color: var(--color-border-line);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d6dee6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 12px 8px; max-width: 100%; }
-  .ec .dash-select:hover { border-color: #4a5e72; }
-  .ec-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
-  .ec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--cds-gap-md); }
-  .ec-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
-  .ec-lead { font-size: var(--cds-font-size-heading); line-height: 1.45; margin: 0; max-width: 66ch; }
-  .ec-lead b { font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
-  .ec-main { color: var(--c-main); }
-  .ec-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; line-height: 1.6; }
-  .ec-lang { display: inline-flex; flex-shrink: 0; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; }
-  .ec-lang-btn { font: inherit; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); padding: 5px 14px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
-  .ec-lang-btn[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
-  .ec-lang-btn:focus-visible, .ec-day:focus-visible, .ec-hz-pill:focus-visible { outline: 2px solid #81cffe; outline-offset: 2px; }
-  .ec-run { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
-  .ec-run-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .ec-pill { font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 2px 10px; }
-  .ec-pill-arch { color: #0b1219; background: #81cffe; border-color: #81cffe; font-weight: var(--cds-font-weight-medium); }
-  .ec-pill-stale { color: #1a1406; background: #e0c050; border-color: #e0c050; font-weight: var(--cds-font-weight-medium); }
-  .ec-sec { display: flex; flex-direction: column; gap: var(--cds-gap-md); min-width: 0; }
-  .ec-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
-  .ec-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
-  .ec-sub { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin: 0; max-width: 72ch; line-height: 1.5; }
-  .ec-keys { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .ec-key { display: inline-flex; align-items: center; gap: 6px; }
-  .ec-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
-  .ec-sw-main { background: var(--c-main); } .ec-sw-sh { background: var(--c-sh); } .ec-sw-imerg { background: var(--c-imerg); } .ec-sw-exp { background: var(--c-exp); }
-  .ec-sw-p90 { height: 10px; width: 14px; border-radius: 2px; background: var(--c-sp90); } .ec-sw-p75 { height: 10px; width: 14px; border-radius: 2px; background: var(--c-sp75); }
-  .ec-sw-tick { width: 12px; height: 0; border-top: 2px solid #e6f3fc; }
-  .ec-sw-td { background: none; border-top: 2px dashed var(--c-td); height: 0; }
-  .ec-sw-box { height: 10px; width: 10px; border-radius: 2px; }
-  .ec-sw-solid { background: repeating-linear-gradient(45deg, var(--color-fg-muted) 0 2px, transparent 2px 4px); border: 1px solid var(--color-fg-muted); }
-  /* Опасные явления */
-  .ec-hz { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
-  .ec-hz-pill { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--cds-font-size-body); color: #1a0d06; background: var(--c-haz); border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
-  .ec-hz-pill svg { flex-shrink: 0; }
+  .ec-wrap { padding-left: max(16px, var(--cds-pad-lg)); padding-right: max(16px, var(--cds-pad-lg)); }
+  .ec .dash-select { background-color: var(--color-panel); color: var(--color-fg); border-color: var(--color-border-line); max-width: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d6dee6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 12px 8px; }
+  .ec button:focus-visible, .ec .ec-day:focus-visible, .ec .dash-select:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+
+  /* Верхняя панель: место, расчёт, язык */
+  .ec-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+    padding-top: 12px; padding-bottom: 12px; background: rgba(11, 18, 25, .92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--color-border-line); }
+  .ec-brand { font-weight: var(--cds-font-weight-medium); letter-spacing: .02em; white-space: nowrap; }
+  .ec-brand small { color: var(--color-fg-faint); font-weight: 400; margin-left: 6px; }
+  .ec-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+  .ec-seg button { font: inherit; font-size: var(--cds-font-size-caption); padding: 6px 14px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
+  .ec-seg button[aria-pressed="true"] { background: var(--c-accent); color: #0b1219; font-weight: var(--cds-font-weight-medium); }
+  .ec-bar-r { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ec-bar .dash-select { font-size: var(--cds-font-size-caption); min-width: 0; }
+  @media (max-width: 640px) { .ec-bar { position: static; } .ec-bar-r { margin-left: 0; width: 100%; } .ec-bar-r .dash-select { flex: 1; } .ec-hero-ico { width: 56px !important; height: 56px !important; } .ec-hero-day { gap: 12px; } }
+
+  /* Главный блок: выбранный день */
+  .ec-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 32px; align-items: end; }
+  @media (max-width: 760px) { .ec-hero { grid-template-columns: minmax(0, 1fr); } }
+  .ec-hero-k { margin: 0 0 6px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .08em; }
+  .ec-hero-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: clamp(26px, 4vw, 38px); line-height: 1.1; margin: 0; text-wrap: balance; }
+  .ec-hero-day { display: flex; align-items: center; gap: 18px; margin-top: 18px; }
+  .ec-hero-ico { width: 76px; height: 76px; flex-shrink: 0; }
+  .ec-hero-t { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: clamp(40px, 7vw, 64px); line-height: 1; white-space: nowrap; letter-spacing: -.01em; }
+  .ec-hero-t .u { font-size: .45em; color: var(--color-fg-muted); margin-left: 4px; }
+  .ec-hero-t .sep { color: var(--color-fg-faint); margin: 0 .12em; }
+  .ec-hero-when { font-size: var(--cds-font-size-heading); }
+  .ec-hero-sp { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: 6px; }
+  .ec-stats { display: grid; grid-template-columns: repeat(3, minmax(108px, auto)); gap: 14px 26px; }
+  @media (max-width: 760px) { .ec-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .ec-stat-k { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-stat-v { font-size: 22px; font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .ec-stat-v .u { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-weight: 400; margin-left: 3px; }
+  .ec-summary { margin: 18px 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); line-height: 1.5; max-width: 80ch; }
+  .ec-summary b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .ec-pill { font-size: var(--cds-font-size-caption); border-radius: 999px; padding: 2px 10px; font-weight: var(--cds-font-weight-medium); }
+  .ec-pill-arch { color: #0b1219; background: var(--c-accent); }
+  .ec-pill-stale { color: #1a1406; background: #e0c050; }
+  .ec-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+  /* Строка опасных явлений */
+  .ec-alerts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 14px; border-radius: 10px; background: var(--color-panel); border: 1px solid var(--color-border-line); }
+  .ec-alerts-ok { color: var(--color-ok); font-size: var(--cds-font-size-body); display: inline-flex; align-items: center; gap: 8px; }
+  .ec-alerts-ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); }
+  .ec-alerts-note { margin-left: auto; font-size: var(--cds-font-size-caption); color: var(--color-fg-faint); }
+  .ec-hz { display: contents; }
+  .ec-hz-pill { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--cds-font-size-caption); color: #1a0d06; background: var(--c-haz); border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
   .ec-hz-pill.poss { background: transparent; color: var(--c-haz); box-shadow: inset 0 0 0 1px var(--c-haz); }
-  .ec-hz-none { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-ok); }
-  /* Дни */
-  .ec-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--cds-gap-sm); }
-  .ec-days { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--cds-gap-md); }
-  .ec-day { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 10px; min-width: 0;
-    padding: var(--cds-pad-md) var(--cds-pad-md) calc(var(--cds-pad-md) + 2px);
-    background: linear-gradient(180deg, #1c2b3a 0%, #131e28 100%); border: 1px solid #2c3b4b; border-radius: calc(var(--cds-radius) + 4px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 8px 18px -8px rgba(0, 0, 0, .7); }
-  .ec-day:hover { border-color: #4a5e72; }
-  .ec-day[aria-pressed="true"] { border-color: #81cffe; background: linear-gradient(180deg, #223a50 0%, #172a3a 100%);
-    box-shadow: inset 0 0 0 1px #81cffe, 0 10px 22px -8px rgba(0, 0, 0, .75); }
-  @media (prefers-reduced-motion: no-preference) {
-    .ec-day { transition: transform var(--cds-dur-slow) var(--cds-ease-out), box-shadow var(--cds-dur-slow) var(--cds-ease-out); }
-    .ec-day:hover { transform: translateY(-2px); }
-  }
-  .ec-day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
-  .ec-day-d { font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-heading); }
-  .ec-day-w { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .06em; }
-  .ec-day-row { display: grid; grid-template-columns: 30px 1fr; gap: 1px 8px; font-size: var(--cds-font-size-caption); align-items: center; }
-  .ec-day-ico { grid-row: span 2; width: 30px; height: 30px; display: block; }
-  .ec-day-m { font-weight: var(--cds-font-weight-medium); margin-right: 4px; }
-  .ec-day-t { font-size: var(--cds-font-size-body); white-space: nowrap; }
-  .ec-day-x { color: var(--color-fg-muted); white-space: nowrap; }
-  .ec-wx-keys { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); align-items: center; }
-  .ec-wx-key { display: inline-flex; align-items: center; gap: 5px; }
-  .ec-wx-key svg { width: 20px; height: 20px; }
-  .ec-day-part { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .ec-bell { color: var(--c-haz); display: inline-flex; }
+
+  /* Полоса дней */
+  .ec-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .ec-sec { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .ec-sec-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+  .ec-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .ec-day { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px;
+    background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 12px; }
+  .ec-day:hover { border-color: #3c4d61; }
+  .ec-day[aria-pressed="true"] { border-color: var(--c-accent); background: var(--color-panel-2); box-shadow: inset 0 0 0 1px var(--c-accent); }
+  .ec-day-h { display: flex; align-items: baseline; gap: 8px; }
+  .ec-day-w { font-weight: var(--cds-font-weight-medium); text-transform: capitalize; }
+  .ec-day-d { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .ec-day-part { margin-left: auto; color: var(--color-fg-faint); font-size: var(--cds-font-size-caption); }
+  .ec-bell { color: var(--c-haz); display: inline-flex; margin-left: auto; }
   .ec-bell.poss { opacity: .55; }
-  .ec-day-sp { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; }
-  .ec-day-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); white-space: nowrap; }
-  /* Графики */
-  .ec-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
-  .ec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--cds-gap-md); }
-  .ec-chart { position: relative; min-height: 200px; width: 100%; }
-  .ec-chart-s { min-height: 130px; }
+  .ec-day-mid { display: flex; align-items: center; gap: 10px; }
+  .ec-day-ico { width: 38px; height: 38px; flex-shrink: 0; display: block; }
+  .ec-day-x { display: flex; flex-direction: column; gap: 2px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-day-x b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .ec-tbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: var(--cds-font-size-body); }
+  .ec-tbar-lo { color: var(--color-fg-muted); } .ec-tbar-hi { font-weight: var(--cds-font-weight-medium); }
+  .ec-track { position: relative; height: 6px; border-radius: 3px; background: #1f2b38; }
+  .ec-track i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+  .ec-track .sp { background: rgba(242, 166, 90, .25); }
+  .ec-track .mn { background: linear-gradient(90deg, #6fb6ee, var(--c-temp)); }
+
+  /* Карточки и графики */
+  .ec-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .ec-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .ec-grid4 { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @media (min-width: 560px) { .ec-grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ec-grid4 .ec-xp { grid-column: span 2; } }
+  @media (min-width: 900px) { .ec-grid4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .ec-card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+  .ec-card-h .dash-select { font-size: var(--cds-font-size-caption); padding-top: 4px; padding-bottom: 4px; }
+  .ec-sw-dash2 { background: none; border-top: 2px dashed currentColor; height: 0; }
+  .ec-chart { position: relative; width: 100%; min-height: 160px; }
+  .ec-chart-meteo { min-height: 520px; }
   .ec-chart svg { display: block; overflow: visible; }
   .ec-chart .tick text, .ec-ax-label { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
   .ec-chart .tick line { stroke: var(--cds-chart-grid); }
   .ec-chart .domain { stroke: var(--cds-chart-axis); }
-  .ec-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 6px; padding: 6px 9px; font-size: var(--cds-font-size-caption); color: var(--color-fg); white-space: nowrap; z-index: 3; }
+  .ec-pt { fill: var(--color-fg); font-size: var(--cds-font-size-caption); font-weight: 600; font-family: var(--font-anthropic-sans); }
+  .ec-pt-u { fill: var(--color-fg-faint); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .ec-endl { font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); font-weight: 600; }
+  .ec-dayl { fill: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .ec-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 8px; padding: 8px 10px; font-size: var(--cds-font-size-caption); color: var(--color-fg); white-space: nowrap; z-index: 3; line-height: 1.55; }
   .ec-tip b { font-weight: var(--cds-font-weight-medium); }
   .ec-tip .m { color: var(--cds-text-secondary); }
-  .ec-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-md) 0; }
-  .ec-ctrl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  /* Таблицы */
+  .ec-tip .k { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .ec-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 16px 0; }
+  .ec-ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-keys { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ec-key { display: inline-flex; align-items: center; gap: 6px; }
+  .ec-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .ec-sw-main { background: var(--c-main); } .ec-sw-sh { background: var(--c-sh); } .ec-sw-imerg { background: var(--c-imerg); } .ec-sw-exp { background: var(--c-exp); } .ec-sw-temp { background: var(--c-temp); }
+  .ec-sw-box { height: 10px; width: 10px; border-radius: 2px; }
+  .ec-c0 { background: #4a8cc9; } .ec-c1 { background: #6fb6ee; } .ec-c2 { background: #a8daf8; } .ec-c3 { background: #f2faff; }
+  .ec-rose { display: flex; justify-content: center; position: relative; }
+  .ec-rose text { fill: #c3ccd5; font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .ec-roses { position: relative; min-height: 200px; }
+  .ec-rose text.ec-rose-tick { fill: var(--color-fg-muted); font-size: 10px; paint-order: stroke; stroke: var(--color-panel); stroke-width: 3px; }
+  .ec-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-faint); margin: 0; }
+
+  /* Таблицы и свёрнутые разделы */
   .ec-tw { overflow-x: auto; }
-  .ec-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
-  .ec-table th, .ec-table td { padding: 5px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .ec-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--cds-font-size-caption); }
+  /* Колонка дат закреплена: при прокрутке таблицы вбок остаётся на месте */
+  .ec-table th:first-child, .ec-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--color-panel); box-shadow: inset -1px 0 0 var(--color-border-line); }
+  .ec-table th, .ec-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
   .ec-table th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
   .ec-table .l { text-align: left; }
   .ec-table tr.sel td { background: #182838; }
   .ec-table tr.hit td { color: var(--c-haz); }
-  .ec-pos { color: #ec9d7e; } .ec-neg { color: #7ec3ec; }
-  .ec-fold { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); }
+  .ec-fold { border: 1px solid var(--color-border-line); border-radius: 12px; padding: 10px 16px; background: var(--color-panel); }
   .ec-fold > summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); padding: 4px 0; }
-  .ec-fold[open] > summary { margin-bottom: var(--cds-gap-sm); }
-  .ec-notes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; color: var(--color-fg-muted); line-height: 1.5; max-width: 80ch; }
-  .ec-models { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; }
-  .ec-models button { font: inherit; font-size: var(--cds-font-size-caption); padding: 4px 12px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
-  .ec-models button[aria-pressed="true"] { background: #81cffe; color: #0b1219; font-weight: var(--cds-font-weight-medium); }
-  .ec-models button:focus-visible { outline: 2px solid #81cffe; outline-offset: -2px; }
-  .ec-sw-dash { background: none; border-top: 2px dashed var(--color-fg-muted); height: 0; }
-  .ec-roses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--cds-gap-md); position: relative; min-height: 240px; }
-  .ec-rose { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
-  .ec-rose-t { font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
-  .ec-rose text { fill: #c3ccd5; font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
-  .ec-c0 { background: #4a8cc9; } .ec-c1 { background: #6fb6ee; } .ec-c2 { background: #a8daf8; } .ec-c3 { background: #f2faff; }
-  .ec-foot { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
-  .ec-foot p { margin: 0; max-width: 90ch; }
-  .ec-foot a { color: #81cffe; text-decoration: underline; text-underline-offset: 2px; }
-  @media (max-width: 520px) { .ec-top { flex-direction: column-reverse; align-items: flex-end; } .ec-title { align-self: stretch; } }
-  .ec-expnote { margin: 0; padding: 6px 10px; border-left: 3px solid var(--c-haz, #ff8a5c); background: rgba(255, 138, 92, .08); color: var(--color-fg); font-size: var(--cds-font-size-body); max-width: 80ch; border-radius: 0 4px 4px 0; }
-  .ec-attr { margin-top: 6px !important; font-style: italic; }
+  .ec-fold[open] > summary { margin-bottom: 10px; }
+  .ec-notes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; color: var(--color-fg-muted); line-height: 1.5; max-width: 90ch; font-size: var(--cds-font-size-body); }
+  .ec-foot { border-top: 1px solid var(--color-border-line); padding-top: 16px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
+  .ec-foot p { margin: 0 0 6px; max-width: 100ch; }
+  .ec-foot a { color: var(--c-accent); text-decoration: underline; text-underline-offset: 2px; }
+  .ec-attr { font-style: italic; }
 </style>
 
-<div class="ec" lang="ru">
 <div class="ec" lang="ru">
 <svg class="ec-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
   <defs>
@@ -173,129 +193,127 @@
     <symbol id="ec-i-mix" viewBox="0 0 24 24"><path d="M6.5 14.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 5.1 4.7 4.7 0 0 0 6.5 14.5z" fill="#b6c1cc"/><path d="M8.2 17.2l-1.1 3.2M17 17.2l-1.1 3.2" stroke="#5aa9f0" stroke-width="1.9" stroke-linecap="round" fill="none"/><path d="M12 17.5v3.4M10.5 18.349999999999998l3 1.7M10.5 20.05l3-1.7" stroke="#e6f3fc" stroke-width="1.1" stroke-linecap="round" fill="none"/></symbol>
   </defs>
 </svg>
-  <header class="ec-head" id="top">
-    <div class="ec-top">
-      <h1 class="ec-title"><span data-l="ru">Прогноз WeatherNext 3: <span data-draw="place-ru" data-source="info" data-field="value" data-where="key=place_ru">—</span></span><span data-l="en" lang="en">WeatherNext 3 forecast: <span data-draw="place-en" data-source="info" data-field="value" data-where="key=place_en">—</span></span></h1>
-      <div class="ec-lang" role="group" aria-label="Язык / Language">
-        <button type="button" class="ec-lang-btn" data-lang-btn="ru" aria-pressed="true" lang="ru">RU</button>
-        <button type="button" class="ec-lang-btn" data-lang-btn="en" aria-pressed="false" lang="en">EN</button>
-      </div>
-    </div>
-    <p class="ec-lead" data-l="ru" data-read lang="ru">С <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> по <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b> температура воздуха — от <b data-draw="tmin" data-source="period" data-field="tmin_c" data-row="0">—</b> до <b data-draw="tmax" data-source="period" data-field="tmax_c" data-row="0">—</b> °C по среднему ансамбля (с учётом разброса P10–P90 — от <b data-draw="tmin-p10" data-source="period" data-field="tmin_p10_c" data-row="0">—</b> до <b data-draw="tmax-p90" data-source="period" data-field="tmax_p90_c" data-row="0">—</b> °C). Сумма осадков за период — <b data-draw="psum" data-source="period" data-field="precip_mm" data-row="0">—</b> мм, из них твёрдых <b data-draw="psol" data-source="period" data-field="solid_mm" data-row="0">—</b> мм.</p>
-    <p class="ec-lead" data-l="en" data-read lang="en">From <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> to <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b>, air temperature ranges from <b data-draw="tmin" data-source="period" data-field="tmin_c" data-row="0">—</b> to <b data-draw="tmax" data-source="period" data-field="tmax_c" data-row="0">—</b> °C in the ensemble mean (from <b data-draw="tmin-p10" data-source="period" data-field="tmin_p10_c" data-row="0">—</b> to <b data-draw="tmax-p90" data-source="period" data-field="tmax_p90_c" data-row="0">—</b> °C including the P10–P90 spread). Total precipitation for the period is <b data-draw="psum" data-source="period" data-field="precip_mm" data-row="0">—</b> mm, of which <b data-draw="psol" data-source="period" data-field="solid_mm" data-row="0">—</b> mm solid.</p>
-    <div class="ec-run">
-      <span class="ec-run-label"><span data-l="ru">Место</span><span data-l="en" lang="en">Place</span></span>
-      <span class="ec-models" role="group" aria-label="Место / Place" data-draw="place-btns" data-source="runs"></span>
-    </div>
-    <div class="ec-run">
-      <label class="ec-run-label" for="run-select"><span data-l="ru">Показан расчёт</span><span data-l="en" lang="en">Run shown</span></label>
+
+  <header class="ec-bar ec-wrap" id="top">
+    <span class="ec-brand">WeatherNext 3<small data-l="ru">прогноз на 3 суток</small><small data-l="en" lang="en">3-day forecast</small></span>
+    <span class="ec-seg" role="group" aria-label="Место / Place" data-draw="place-btns" data-source="runs"></span>
+    <div class="ec-bar-r">
       <select class="dash-select" id="run-select" data-draw="run-select" data-source="runs" aria-label="Расчёт / Run"></select>
-      <span class="ec-pill ec-pill-arch" data-pill="arch" hidden><span data-l="ru">Архивный расчёт</span><span data-l="en" lang="en">Archived run</span></span>
-      <span class="ec-pill ec-pill-stale" data-pill="stale" hidden><span data-l="ru">Прогноз устарел: расчёту больше суток</span><span data-l="en" lang="en">Forecast is out of date: run is over a day old</span></span>
-    </div>
-    <div class="ec-run">
-      <span class="ec-run-label"><span data-l="ru">Разброс ансамбля на графиках</span><span data-l="en" lang="en">Ensemble spread on charts</span></span>
-      <span class="ec-models" role="group" aria-label="Разброс / Spread">
-        <button type="button" data-spread-btn="on" aria-pressed="true"><span data-l="ru">Показать</span><span data-l="en" lang="en">Show</span></button>
-        <button type="button" data-spread-btn="off" aria-pressed="false"><span data-l="ru">Скрыть</span><span data-l="en" lang="en">Hide</span></button>
+      <span class="ec-seg" role="group" aria-label="Язык / Language">
+        <button type="button" data-lang-btn="ru" aria-pressed="true" lang="ru">RU</button>
+        <button type="button" data-lang-btn="en" aria-pressed="false" lang="en">EN</button>
       </span>
     </div>
-    <p class="ec-meta" data-l="ru">Запуск модели (UTC): <span data-draw="init" data-source="info" data-field="value" data-where="key=init_utc">—</span> · расчёт выполнен <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> по Ташкенту · точка <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° с. ш., <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° в. д., высота <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> м · время на странице — ташкентское (UTC+5)</p>
-    <p class="ec-meta" data-l="en" lang="en">Model run (UTC): <span data-draw="init" data-source="info" data-field="value" data-where="key=init_utc">—</span> · computed <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span> Tashkent time · point <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° N, <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° E, elevation <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> m · all times on this page are Tashkent time (UTC+5)</p>
   </header>
 
-  <section class="ec-sec" id="hazards">
-    <h2 class="ec-h2"><span data-l="ru">Опасные явления</span><span data-l="en" lang="en">Hazards</span></h2>
-    <p class="ec-sub"><span data-l="ru">Сплошная плашка — порог превышен по среднему ансамбля. Контурная «возможно» — порог превышен только в крайнем варианте ансамбля (P90, для мороза P10). Нажмите на предупреждение, чтобы открыть этот день; критерии — в разделе «Как получены цифры» внизу.</span><span data-l="en" lang="en">A solid label means the ensemble mean exceeds the threshold. An outlined “possible” label means only the extreme ensemble member does (P90, or P10 for frost). Click a warning to open that day; the criteria are under “How the numbers are made” at the bottom.</span></p>
-    <p class="ec-expnote" data-l="ru">Экспериментальный прогноз: не заменяет официальные предупреждения гидрометеорологических служб.</p>
-    <p class="ec-expnote" data-l="en" lang="en">Experimental forecast: it does not replace official warnings issued by hydrometeorological services.</p>
-    <p class="ec-hz-none" data-haz="none" hidden><span data-l="ru">В этом расчёте опасных явлений не ожидается, в том числе по P90/P10.</span><span data-l="en" lang="en">No hazards are expected in this run, including at P90/P10.</span></p>
-    <div class="ec-hz" data-draw="haz-list" data-source="hazards"></div>
-  </section>
-
-  <section class="ec-sec" id="days">
-    <h2 class="ec-h2"><span data-l="ru">По дням</span><span data-l="en" lang="en">Day by day</span></h2>
-    <p class="ec-sub"><span data-l="ru">Наименьшая и наибольшая температура воздуха по среднему ансамбля и разброс P10–P90, сумма осадков и наибольший ветер за сутки по ташкентскому времени; значок — погода дня. Нажмите на день, чтобы увидеть его подробно ниже.</span><span data-l="en" lang="en">Lowest and highest air temperature in the ensemble mean with the P10–P90 spread, total precipitation and strongest wind for each Tashkent calendar day; the icon shows the day’s weather. Click a day to see it in detail below.</span></p>
-    <div class="ec-days" data-draw="days" data-source="daily hazards" data-fetchpriority="high"></div>
-    <div class="ec-wx-keys">
-      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-sun"></use></svg><span data-l="ru">ясно</span><span data-l="en" lang="en">clear</span></span>
-      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-part"></use></svg><span data-l="ru">переменная облачность</span><span data-l="en" lang="en">partly cloudy</span></span>
-      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-cloud"></use></svg><span data-l="ru">пасмурно</span><span data-l="en" lang="en">overcast</span></span>
-      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-rain"></use></svg><span data-l="ru">дождь</span><span data-l="en" lang="en">rain</span></span>
-      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-mix"></use></svg><span data-l="ru">дождь со снегом</span><span data-l="en" lang="en">rain and snow</span></span>
-      <span class="ec-wx-key"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ec-i-snow"></use></svg><span data-l="ru">снег</span><span data-l="en" lang="en">snow</span></span>
+  <section class="ec-wrap ec-hero" id="hero">
+    <div>
+      <p class="ec-hero-k"><span data-l="ru">Прогноз погоды</span><span data-l="en" lang="en">Weather forecast</span></p>
+      <h1 class="ec-hero-title"><span data-l="ru" data-draw="place-ru" data-source="info" data-field="value" data-where="key=place_ru">—</span><span data-l="en" lang="en" data-draw="place-en" data-source="info" data-field="value" data-where="key=place_en">—</span></h1>
+      <div class="ec-hero-day">
+        <span data-draw="hero-ico" data-source="daily"></span>
+        <div>
+          <div class="ec-hero-when" data-draw="hero-when">—</div>
+          <div class="ec-hero-t" data-draw="hero-t" data-source="daily">—</div>
+          <div class="ec-hero-sp" data-draw="hero-sp" data-source="daily">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="ec-stats" id="hero-stats">
+      <div><div class="ec-stat-k"><span data-l="ru">Осадки</span><span data-l="en" lang="en">Precipitation</span></div><div class="ec-stat-v" data-draw="st-p" data-source="daily">—</div></div>
+      <div><div class="ec-stat-k"><span data-l="ru">Ветер до</span><span data-l="en" lang="en">Wind up to</span></div><div class="ec-stat-v" data-draw="st-w" data-source="daily">—</div></div>
+      <div><div class="ec-stat-k"><span data-l="ru">Облачность</span><span data-l="en" lang="en">Cloud cover</span></div><div class="ec-stat-v" data-draw="st-c" data-source="daily">—</div></div>
+      <div><div class="ec-stat-k"><span data-l="ru">Влажность</span><span data-l="en" lang="en">Humidity</span></div><div class="ec-stat-v" data-draw="st-rh" data-source="daily">—</div></div>
+      <div><div class="ec-stat-k"><span data-l="ru">Давление</span><span data-l="en" lang="en">Pressure</span></div><div class="ec-stat-v" data-draw="st-msl" data-source="daily">—</div></div>
+      <div><div class="ec-stat-k"><span data-l="ru">Радиация</span><span data-l="en" lang="en">Radiation</span></div><div class="ec-stat-v" data-draw="st-sun" data-source="daily">—</div></div>
     </div>
   </section>
 
-  <section class="ec-sec" id="period">
-    <h2 class="ec-h2"><span data-l="ru">Весь период</span><span data-l="en" lang="en">Whole period</span></h2>
-    <p class="ec-sub"><span data-l="ru">Температура воздуха на 2 м по часам и суточные суммы осадков. Выбранный день подсвечен; нажмите на график, чтобы выбрать другой.</span><span data-l="en" lang="en">Hourly air temperature at 2 m and daily precipitation totals. The selected day is highlighted; click the chart to pick another.</span></p>
-    <div class="ec-keys">
-      <span class="ec-key"><span class="ec-sw ec-sw-main"></span><span data-l="ru">среднее по ансамблю</span><span data-l="en" lang="en">ensemble mean</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-p75"></span>P25–P75</span>
-      <span class="ec-key"><span class="ec-sw ec-sw-p90"></span>P10–P90</span>
-      <span class="ec-key"><span class="ec-sw ec-sw-box ec-sw-solid"></span><span data-l="ru">штриховка — твёрдые осадки</span><span data-l="en" lang="en">hatched — solid precipitation</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-tick"></span><span data-l="ru">черта — сумма часовых P90 (ориентир)</span><span data-l="en" lang="en">tick — sum of hourly P90 (rough guide)</span></span>
+  <div class="ec-wrap">
+    <p class="ec-summary" data-l="ru" data-read lang="ru">С <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> по <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b> — от <b data-draw="tmin" data-source="period" data-field="tmin_c" data-row="0">—</b> до <b data-draw="tmax" data-source="period" data-field="tmax_c" data-row="0">—</b> °C, осадков <b data-draw="psum" data-source="period" data-field="precip_mm" data-row="0">—</b> мм. Запуск модели <span data-draw="init" data-source="info" data-field="value" data-where="key=init_utc">—</span> UTC, расчёт <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span>; время на странице — ташкентское (UTC+5).</p>
+    <p class="ec-summary" data-l="en" data-read lang="en">From <b data-draw="p-start" data-source="info" data-field="value" data-where="key=period_start_local">—</b> to <b data-draw="p-end" data-source="info" data-field="value" data-where="key=period_end_local">—</b>: <b data-draw="tmin" data-source="period" data-field="tmin_c" data-row="0">—</b> to <b data-draw="tmax" data-source="period" data-field="tmax_c" data-row="0">—</b> °C, <b data-draw="psum" data-source="period" data-field="precip_mm" data-row="0">—</b> mm of precipitation. Model run <span data-draw="init" data-source="info" data-field="value" data-where="key=init_utc">—</span> UTC, computed <span data-draw="req" data-source="info" data-field="value" data-where="key=requested_local">—</span>; times are Tashkent time (UTC+5).</p>
+    <div class="ec-pills">
+      <span class="ec-pill ec-pill-arch" data-pill="arch" hidden><span data-l="ru">Архивный расчёт</span><span data-l="en" lang="en">Archived run</span></span>
+      <span class="ec-pill ec-pill-stale" data-pill="stale" hidden><span data-l="ru">Прогноз устарел: расчёту больше суток</span><span data-l="en" lang="en">Out of date: run is over a day old</span></span>
+    </div>
+  </div>
+
+  <section class="ec-wrap" id="hazards">
+    <div class="ec-alerts">
+      <span class="ec-alerts-ok" data-haz="none" hidden><span data-l="ru">Опасных явлений не ожидается</span><span data-l="en" lang="en">No hazards expected</span></span>
+      <span class="ec-hz" data-draw="haz-list" data-source="hazards"></span>
+      <span class="ec-alerts-note"><span data-l="ru">Экспериментальный прогноз: не заменяет официальные предупреждения гидрометеорологических служб.</span><span data-l="en" lang="en">Experimental forecast: it does not replace official warnings issued by hydrometeorological services.</span></span>
+    </div>
+  </section>
+
+  <section class="ec-wrap ec-sec" id="days">
+    <h2 class="ec-h2"><span data-l="ru">По дням</span><span data-l="en" lang="en">Day by day</span></h2>
+    <div class="ec-days" data-draw="days" data-source="daily hazards" data-fetchpriority="high"></div>
+  </section>
+
+  <section class="ec-wrap ec-sec" id="meteogram">
+    <div class="ec-sec-h">
+      <h2 class="ec-h2"><span data-l="ru">По часам</span><span data-l="en" lang="en">Hour by hour</span></h2>
+      <div class="ec-ctrl">
+        <span class="ec-seg" role="group" aria-label="Период / Period">
+          <button type="button" data-view-btn="all" aria-pressed="true"><span data-l="ru">3 суток</span><span data-l="en" lang="en">3 days</span></button>
+          <button type="button" data-view-btn="day" aria-pressed="false"><span data-l="ru">Выбранный день</span><span data-l="en" lang="en">Selected day</span></button>
+        </span>
+        <span class="ec-seg" role="group" aria-label="Разброс / Spread">
+          <button type="button" data-spread-btn="on" aria-pressed="true"><span data-l="ru">С разбросом</span><span data-l="en" lang="en">With spread</span></button>
+          <button type="button" data-spread-btn="off" aria-pressed="false"><span data-l="ru">Только среднее</span><span data-l="en" lang="en">Mean only</span></button>
+        </span>
+      </div>
     </div>
     <div class="ec-card">
-      <h3 class="ec-h3"><span data-l="ru">Температура воздуха на 2 м, °C</span><span data-l="en" lang="en">Air temperature at 2 m, °C</span></h3>
-      <div class="ec-chart" data-draw="period-t" data-source="hourly"></div>
-      <h3 class="ec-h3"><span data-l="ru">Осадки за сутки, мм</span><span data-l="en" lang="en">Daily precipitation, mm</span></h3>
-      <div class="ec-chart ec-chart-s" data-draw="period-p" data-source="daily"></div>
+      <div class="ec-chart ec-chart-meteo" data-draw="meteo" data-source="hourly"></div>
+      <p class="ec-note"><span data-l="ru">Линия — среднее по ансамблю, полосы — разброс P10–P90 (у температуры ещё P25–P75). Осадки — за час, окончившийся в указанное время; штриховка — твёрдые. Стрелки показывают, куда дует ветер. Нажмите на график, чтобы выбрать день.</span><span data-l="en" lang="en">Line — ensemble mean; bands — P10–P90 spread (plus P25–P75 for temperature). Precipitation is for the hour ending at the time shown; hatched — solid. Arrows show where the wind blows to. Click the chart to pick a day.</span></p>
     </div>
-  </section>
-
-  <section class="ec-sec" id="day">
-    <h2 class="ec-h2"><span data-l="ru">Выбранный день:</span><span data-l="en" lang="en">Selected day:</span> <span data-draw="day-name">—</span></h2>
-    <p class="ec-sub"><span data-l="ru">Значения по каждому часу. Линия — среднее по ансамблю, полоса — разброс P10–P90 (у температуры ещё P25–P75). Осадки — за час, окончившийся в указанное время.</span><span data-l="en" lang="en">Hourly values. The line is the ensemble mean, the band the P10–P90 spread (plus P25–P75 for temperature). Precipitation is for the hour ending at the time shown.</span></p>
-    <div class="ec-keys">
-      <span class="ec-key"><span class="ec-sw ec-sw-main"></span><span data-l="ru">среднее по ансамблю</span><span data-l="en" lang="en">ensemble mean</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-p90"></span>P10–P90</span>
-      <span class="ec-key"><span class="ec-sw ec-sw-td"></span><span data-l="ru">пунктир — точка росы / ветер на 100 м</span><span data-l="en" lang="en">dashed — dew point / wind at 100 m</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-box ec-sw-solid"></span><span data-l="ru">штриховка — твёрдые осадки</span><span data-l="en" lang="en">hatched — solid precipitation</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-tick"></span><span data-l="ru">черта — P90 осадков</span><span data-l="en" lang="en">tick — precipitation P90</span></span>
-    </div>
-    <div class="ec-grid">
-      <div class="ec-card" id="day-temp"><h3 class="ec-h3"><span data-l="ru">Температура воздуха и точка росы на 2 м, °C</span><span data-l="en" lang="en">Air temperature and dew point at 2 m, °C</span></h3><div class="ec-chart" data-draw="day-t" data-source="hourly"></div></div>
-      <div class="ec-card" id="day-precip"><h3 class="ec-h3"><span data-l="ru">Осадки за час, мм</span><span data-l="en" lang="en">Hourly precipitation, mm</span></h3><div class="ec-chart" data-draw="day-p" data-source="hourly"></div></div>
-      <div class="ec-card" id="day-msl"><h3 class="ec-h3"><span data-l="ru">Давление на уровне моря, гПа</span><span data-l="en" lang="en">Mean sea-level pressure, hPa</span></h3><div class="ec-chart" data-draw="day-msl" data-source="hourly"></div></div>
-      <div class="ec-card" id="day-rh"><h3 class="ec-h3"><span data-l="ru">Относительная влажность, %</span><span data-l="en" lang="en">Relative humidity, %</span></h3><div class="ec-chart" data-draw="day-rh" data-source="hourly"></div></div>
-      <div class="ec-card" id="day-wind"><h3 class="ec-h3"><span data-l="ru">Скорость ветра на 10 м и 100 м, м/с</span><span data-l="en" lang="en">Wind speed at 10 m and 100 m, m/s</span></h3><div class="ec-chart" data-draw="day-w" data-source="hourly"></div></div>
-      <div class="ec-card" id="day-cloud"><h3 class="ec-h3"><span data-l="ru">Общая облачность, %</span><span data-l="en" lang="en">Total cloud cover, %</span></h3><div class="ec-chart" data-draw="day-c" data-source="hourly"></div></div>
-      <div class="ec-card" id="day-sun"><h3 class="ec-h3"><span data-l="ru">Суммарная солнечная радиация, Вт/м² (среднее за час)</span><span data-l="en" lang="en">Downward solar radiation, W/m² (hourly mean)</span></h3><div class="ec-chart" data-draw="day-s" data-source="hourly"></div></div>
-    </div>
-    <div class="ec-card" id="rose">
-      <h3 class="ec-h3"><span data-l="ru">Роза ветров за выбранный день</span><span data-l="en" lang="en">Wind rose for the selected day</span></h3>
-      <p class="ec-sub"><span data-l="ru">Откуда дует ветер на 10 м по среднему ансамбля: доля часов суток по 8 румбам, с разбивкой по скорости. За полные сутки 24 часа, каждый — около 4.2 %.</span><span data-l="en" lang="en">Where the 10 m wind blows from in the ensemble mean: share of the day’s hours in 8 directions, split by speed. A full day has 24 hours, each about 4.2 %.</span></p>
-      <div class="ec-keys">
-        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c0"></span><span data-l="ru">до 2 м/с</span><span data-l="en" lang="en">under 2 m/s</span></span>
-        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c1"></span><span data-l="ru">2–5 м/с</span><span data-l="en" lang="en">2–5 m/s</span></span>
-        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c2"></span><span data-l="ru">5–10 м/с</span><span data-l="en" lang="en">5–10 m/s</span></span>
-        <span class="ec-key"><span class="ec-sw ec-sw-box ec-c3"></span><span data-l="ru">10 м/с и более</span><span data-l="en" lang="en">10 m/s or more</span></span>
+    <div class="ec-grid4">
+      <div class="ec-card" id="x-msl"><h3 class="ec-h3"><span data-l="ru">Давление на уровне моря, гПа</span><span data-l="en" lang="en">Sea-level pressure, hPa</span></h3><div class="ec-chart" data-draw="x-msl" data-source="hourly"></div></div>
+      <div class="ec-card" id="x-rh"><h3 class="ec-h3"><span data-l="ru">Относительная влажность, %</span><span data-l="en" lang="en">Relative humidity, %</span></h3><div class="ec-chart" data-draw="x-rh" data-source="hourly"></div></div>
+      <div class="ec-card" id="x-sun"><h3 class="ec-h3"><span data-l="ru">Солнечная радиация, Вт/м²</span><span data-l="en" lang="en">Solar radiation, W/m²</span></h3><div class="ec-chart" data-draw="x-sun" data-source="hourly"></div></div>
+      <div class="ec-card" id="rose">
+        <h3 class="ec-h3"><span data-l="ru">Роза ветров: </span><span data-l="en" lang="en">Wind rose: </span><span data-draw="rose-day">—</span></h3>
+        <div class="ec-roses" data-draw="rose" data-source="wind_rose"></div>
+        <div class="ec-keys">
+          <span class="ec-key"><span class="ec-sw ec-sw-box ec-c0"></span><span data-l="ru">&lt;2 м/с</span><span data-l="en" lang="en">&lt;2 m/s</span></span>
+          <span class="ec-key"><span class="ec-sw ec-sw-box ec-c1"></span>2–5</span>
+          <span class="ec-key"><span class="ec-sw ec-sw-box ec-c2"></span>5–10</span>
+          <span class="ec-key"><span class="ec-sw ec-sw-box ec-c3"></span>≥10</span>
+        </div>
       </div>
-      <div class="ec-roses" data-draw="rose" data-source="wind_rose"></div>
+      <div class="ec-card ec-xp" id="x-more">
+        <div class="ec-card-h">
+          <h3 class="ec-h3"><span data-l="ru">Другие параметры</span><span data-l="en" lang="en">More parameters</span></h3>
+          <select class="dash-select" id="xvar" data-draw="xvar" aria-label="Параметр / Parameter"></select>
+        </div>
+        <div class="ec-keys" data-draw="x-keys"></div>
+        <div class="ec-chart" data-draw="x-more" data-source="hourly"></div>
+      </div>
     </div>
   </section>
 
-  <section class="ec-sec" id="variants">
-    <h2 class="ec-h2"><span data-l="ru">Варианты прогноза WeatherNext</span><span data-l="en" lang="en">WeatherNext forecast variants</span></h2>
-    <p class="ec-sub"><span data-l="ru">Кроме основного прогноза, WeatherNext 3 даёт температуру, обученную на данных метеостанций, и два варианта осадков: обученный на спутниковых данных IMERG и экспериментальный. Сравниваются средние по ансамблю.</span><span data-l="en" lang="en">Besides the main forecast, WeatherNext 3 provides a temperature trained on weather-station data and two precipitation variants: one trained on IMERG satellite data and an experimental one. Ensemble means are compared.</span></p>
-    <div class="ec-ctrl">
-      <label for="cvar"><span data-l="ru">Величина</span><span data-l="en" lang="en">Variable</span></label>
-      <select class="dash-select" id="cvar" data-draw="cvar" aria-label="Величина / Variable"></select>
+  <section class="ec-wrap ec-sec" id="variants">
+    <div class="ec-sec-h">
+      <h2 class="ec-h2"><span data-l="ru">Варианты прогноза WeatherNext</span><span data-l="en" lang="en">WeatherNext forecast variants</span></h2>
+      <div class="ec-ctrl"><select class="dash-select" id="cvar" data-draw="cvar" aria-label="Величина / Variable"></select></div>
     </div>
-    <div class="ec-keys" data-cv="t">
-      <span class="ec-key"><span class="ec-sw ec-sw-main"></span><span data-l="ru">основной прогноз (temperature_2m)</span><span data-l="en" lang="en">main forecast (temperature_2m)</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-sh"></span><span data-l="ru">обученный на станциях (station_head)</span><span data-l="en" lang="en">station-trained (station_head)</span></span>
+    <div class="ec-card">
+      <div class="ec-keys" data-cv="t">
+        <span class="ec-key"><span class="ec-sw ec-sw-temp"></span><span data-l="ru">основной (temperature_2m)</span><span data-l="en" lang="en">main (temperature_2m)</span></span>
+        <span class="ec-key"><span class="ec-sw ec-sw-sh"></span><span data-l="ru">обученный на станциях (station_head)</span><span data-l="en" lang="en">station-trained (station_head)</span></span>
+      </div>
+      <div class="ec-keys" data-cv="p" hidden>
+        <span class="ec-key"><span class="ec-sw ec-sw-main"></span><span data-l="ru">основной (total_precipitation)</span><span data-l="en" lang="en">main (total_precipitation)</span></span>
+        <span class="ec-key"><span class="ec-sw ec-sw-imerg"></span>IMERG</span>
+        <span class="ec-key"><span class="ec-sw ec-sw-exp"></span><span data-l="ru">экспериментальный</span><span data-l="en" lang="en">experimental</span></span>
+      </div>
+      <div class="ec-chart" data-draw="cmp-chart" data-source="hourly p_cum daily"></div>
+      <p class="ec-note"><span data-l="ru">Кроме основного прогноза WeatherNext 3 даёт температуру, обученную на данных метеостанций, и два варианта осадков: обученный на спутниковых данных IMERG и экспериментальный. Сравниваются средние по ансамблю.</span><span data-l="en" lang="en">Besides the main forecast, WeatherNext 3 provides a temperature trained on weather-station data and two precipitation variants: IMERG-trained and experimental. Ensemble means are compared.</span></p>
     </div>
-    <div class="ec-keys" data-cv="p" hidden>
-      <span class="ec-key"><span class="ec-sw ec-sw-main"></span><span data-l="ru">основной (total_precipitation)</span><span data-l="en" lang="en">main (total_precipitation)</span></span>
-      <span class="ec-key"><span class="ec-sw ec-sw-imerg"></span>IMERG</span>
-      <span class="ec-key"><span class="ec-sw ec-sw-exp"></span><span data-l="ru">экспериментальный</span><span data-l="en" lang="en">experimental</span></span>
-    </div>
-    <div class="ec-card"><div class="ec-chart" data-draw="cmp-chart" data-source="hourly p_cum daily"></div></div>
     <details class="ec-fold" id="cmp-days">
-      <summary><span data-l="ru">По суткам: варианты прогноза</span><span data-l="en" lang="en">By day: forecast variants</span></summary>
+      <summary><span data-l="ru">Таблица по суткам</span><span data-l="en" lang="en">Table by day</span></summary>
       <div class="ec-tw">
         <table class="ec-table" data-source="daily" data-row-key="date_local">
           <thead><tr>
@@ -314,57 +332,56 @@
     </details>
   </section>
 
-  <details class="ec-fold" id="haz-table">
-    <summary><span data-l="ru">Проверка порогов опасных явлений</span><span data-l="en" lang="en">Hazard threshold checks</span></summary>
-    <p class="ec-sub" data-haz="none" hidden><span data-l="ru">В этом расчёте превышений нет.</span><span data-l="en" lang="en">No exceedances in this run.</span></p>
-    <div class="ec-tw" data-haz="some" hidden>
-      <table class="ec-table" data-source="hazards" data-row-key="date_local,kind">
-        <thead><tr>
-          <th class="l" data-field="date_local"><span data-l="ru">Дата</span><span data-l="en" lang="en">Date</span></th>
-          <th class="l" data-field="kind"><span data-l="ru">Явление</span><span data-l="en" lang="en">Hazard</span></th>
-          <th class="l" data-field="level"><span data-l="ru">Оценка</span><span data-l="en" lang="en">Rating</span></th>
-          <th data-field="value"><span data-l="ru">Среднее</span><span data-l="en" lang="en">Mean</span></th>
-          <th class="l" data-field="when_local"><span data-l="ru">Время</span><span data-l="en" lang="en">Time</span></th>
-          <th data-field="value_ext"><span data-l="ru">P90 (мороз P10)</span><span data-l="en" lang="en">P90 (frost P10)</span></th>
-          <th class="l" data-field="when_ext"><span data-l="ru">Время</span><span data-l="en" lang="en">Time</span></th>
-          <th data-field="threshold"><span data-l="ru">Порог</span><span data-l="en" lang="en">Threshold</span></th>
-        </tr></thead>
-        <tbody data-draw="haz-table"></tbody>
-      </table>
-    </div>
-  </details>
+  <div class="ec-wrap ec-sec">
+    <details class="ec-fold" id="haz-table">
+      <summary><span data-l="ru">Проверка порогов опасных явлений</span><span data-l="en" lang="en">Hazard threshold checks</span></summary>
+      <p class="ec-note" data-haz="none" hidden><span data-l="ru">В этом расчёте превышений нет, в том числе по P90/P10.</span><span data-l="en" lang="en">No exceedances in this run, including at P90/P10.</span></p>
+      <div class="ec-tw" data-haz="some" hidden>
+        <table class="ec-table" data-source="hazards" data-row-key="date_local,kind">
+          <thead><tr>
+            <th class="l" data-field="date_local"><span data-l="ru">Дата</span><span data-l="en" lang="en">Date</span></th>
+            <th class="l" data-field="kind"><span data-l="ru">Явление</span><span data-l="en" lang="en">Hazard</span></th>
+            <th class="l" data-field="level"><span data-l="ru">Оценка</span><span data-l="en" lang="en">Rating</span></th>
+            <th data-field="value"><span data-l="ru">Среднее</span><span data-l="en" lang="en">Mean</span></th>
+            <th class="l" data-field="when_local"><span data-l="ru">Время</span><span data-l="en" lang="en">Time</span></th>
+            <th data-field="value_ext"><span data-l="ru">P90 (мороз P10)</span><span data-l="en" lang="en">P90 (frost P10)</span></th>
+            <th class="l" data-field="when_ext"><span data-l="ru">Время</span><span data-l="en" lang="en">Time</span></th>
+            <th data-field="threshold"><span data-l="ru">Порог</span><span data-l="en" lang="en">Threshold</span></th>
+          </tr></thead>
+          <tbody data-draw="haz-table"></tbody>
+        </table>
+      </div>
+    </details>
+    <details class="ec-fold" id="method">
+      <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
+      <ul class="ec-notes" data-l="ru">
+        <li>WeatherNext 3 — ансамблевый прогноз погоды на основе машинного обучения (Google). Используются готовые статистики ансамбля: среднее и процентили P10, P25, P75, P90 для каждого часа. Берётся ближайший к точке узел сетки 0.1° (вариант, обученный на станциях, — 0.05°). Точка <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° с. ш., <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° в. д., высота <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> м. Высотная поправка температуры не применяется. Данные готовит блокнот Colab и записывает в файл data.json рядом с этой страницей (последние 30 расчётов на пункт); страница читает его при открытии.</li>
+        <li>Прогноз охватывает 72 часа от ближайшего полного часа после расчёта. Сутки — по ташкентскому времени; час относится к суткам, в которые он закончился, поэтому первые и последние сутки неполные.</li>
+        <li>Опасные явления: ветер от <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> м/с, жидкие осадки от <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> мм за 12 ч, твёрдые от <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> мм за 12 ч, мороз до <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C и ниже, жара от <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C. Сплошная плашка — порог превышен по среднему ансамбля; контурная «возможно» — только по P90 (для мороза P10). Для «возможно» по осадкам складываются часовые P90 — это грубая верхняя оценка.</li>
+        <li>Фаза осадков: осадки часа твёрдые, если средняя температура не выше пороговой (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C для высоты точки). Влажность рассчитана по средним температуре и точке росы (формула Магнуса), направление ветра — по средним составляющим ветра на 10 м.</li>
+        <li>Значок погоды дня: при осадках от 0.5 мм за сутки — дождь, снег (твёрдые не менее 70 % суммы) или дождь со снегом; без осадков — по средней облачности: менее 30 % ясно, 30–70 % переменная облачность, 70 % и более пасмурно. Шкала температуры на карточках дней общая для всех дней: светлая полоса — разброс P10–P90, яркая — среднее мин…макс.</li>
+        <li>«Другие параметры»: температура по ощущению — по формуле Стедмана (Бюро метеорологии Австралии) из средних температуры, влажности и ветра на 10 м: T + 0.33e − 0.70V − 4.00, где e — парциальное давление водяного пара, гПа. Дефицит точки росы — разность средних температуры и точки росы. Осадки нарастающим итогом считаются от начала показанного периода (трое суток или выбранный день).</li>
+      </ul>
+      <ul class="ec-notes" data-l="en" lang="en">
+        <li>WeatherNext 3 is a machine-learning ensemble weather forecast (Google). Ready-made ensemble statistics are used: mean and percentiles P10, P25, P75, P90 for every hour. The 0.1° grid node nearest to the point is used (0.05° for the station-trained variant). Point <span data-draw="lat" data-source="info" data-field="value" data-where="key=lat">—</span>° N, <span data-draw="lon" data-source="info" data-field="value" data-where="key=lon">—</span>° E, elevation <span data-draw="elev" data-source="info" data-field="value" data-where="key=elev_m">—</span> m. No elevation correction is applied to temperature. A Colab notebook prepares the data and writes it to the data.json file next to this page (the latest 30 runs per place); the page reads it when opened.</li>
+        <li>The forecast covers 72 hours from the first full hour after the run. Days are Tashkent calendar days; an hour belongs to the day in which it ends, so the first and last days are partial.</li>
+        <li>Hazards: wind of <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> m/s or more, liquid precipitation of <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> mm or more in 12 h, solid of <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> mm or more in 12 h, frost of <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C or colder, heat of <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C or more. Solid label — the ensemble mean exceeds the threshold; outlined “possible” — only P90 does (P10 for frost). For “possible” precipitation, hourly P90 values are added — a rough upper estimate.</li>
+        <li>Precipitation phase: an hour’s precipitation is solid when the mean temperature is at or below the threshold temperature (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C for the point’s elevation). Humidity is computed from mean temperature and dew point (Magnus formula); wind direction from the mean 10 m wind components.</li>
+        <li>Day icon: with 0.5 mm or more of precipitation — rain, snow (solid at least 70 % of the total) or rain and snow; otherwise by mean cloud cover: under 30 % clear, 30–70 % partly cloudy, 70 % or more overcast. The temperature scale on the day cards is shared by all days: the faint bar is the P10–P90 spread, the bright one the mean min…max.</li>
+        <li>“More parameters”: apparent temperature follows Steadman’s formula (Australian Bureau of Meteorology) from mean temperature, humidity and 10 m wind: T + 0.33e − 0.70V − 4.00, where e is water vapour pressure, hPa. Dew-point depression is mean temperature minus mean dew point. Cumulative precipitation starts at the beginning of the period shown (three days or the selected day).</li>
+      </ul>
+    </details>
+  </div>
 
-  <details class="ec-fold" id="method">
-    <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
-    <ul class="ec-notes" data-l="ru">
-      <li>WeatherNext 3 — ансамблевый прогноз погоды на основе машинного обучения (Google). Используется набор готовых статистик ансамбля: среднее, медиана и процентили P10, P25, P75, P90 для каждого часа. Берётся ближайший к точке узел сетки 0.1° (вариант, обученный на станциях, — 0.05°). Высотная поправка температуры не применяется: сверка с метеостанцией Чимган показала, что модель уже учитывает высоту.</li>
-      <li>Данные готовит блокнот Colab и записывает в файл data.json рядом с этой страницей (последние 30 расчётов на пункт); страница читает его при открытии. Прогноз охватывает 72 часа от ближайшего полного часа после расчёта.</li>
-      <li>Критерии опасных явлений: ветер от <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> м/с, жидкие осадки от <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> мм за 12 ч, твёрдые от <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> мм за 12 ч, мороз до <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C и ниже, жара от <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C. Проверяется среднее по ансамблю (предупреждение) и крайний вариант — P90, для мороза P10 («возможно»). Сравнивается значение, округлённое до 0.1.</li>
-      <li>Осадки за 12 ч — сумма часов, окончившихся за 12 часов до срока включительно; для суток берётся наибольшая такая сумма. Для «возможно» складываются часовые P90 — это грубая верхняя оценка: процентили по часам не складываются в процентиль суммы.</li>
-      <li>Фаза осадков: осадки часа считаются твёрдыми, если средняя по ансамблю температура не выше пороговой (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C для высоты точки).</li>
-      <li>Относительная влажность рассчитана по средним температуре и точке росы (формула Магнуса), направление ветра — по средним составляющим ветра на 10 м.</li>
-      <li>Сутки считаются по ташкентскому времени. Час относится к суткам, в которые он закончился. Первые и последние сутки периода неполные.</li>
-      <li>Значок погоды дня: при осадках от 0.5 мм за сутки — дождь, снег (твёрдые не менее 70 % суммы) или дождь со снегом; без осадков — по средней облачности за сутки: менее 30 % ясно, 30–70 % переменная облачность, 70 % и более пасмурно.</li>
-    </ul>
-    <ul class="ec-notes" data-l="en" lang="en">
-      <li>WeatherNext 3 is a machine-learning ensemble weather forecast (Google). The dataset of ready-made ensemble statistics is used: mean, median and percentiles P10, P25, P75, P90 for every hour. The 0.1° grid node nearest to the point is used (0.05° for the station-trained variant). No elevation correction is applied to temperature: a check against the Chimgan weather station showed that the model already accounts for elevation.</li>
-      <li>A Colab notebook prepares the data and writes it to the data.json file next to this page (the latest 30 runs per place); the page reads it when opened. The forecast covers 72 hours from the first full hour after the run.</li>
-      <li>Hazard criteria: wind of <b data-draw="thr-wind" data-source="thr" data-field="threshold" data-where="kind=wind">—</b> m/s or more, liquid precipitation of <b data-draw="thr-rain" data-source="thr" data-field="threshold" data-where="kind=rain12">—</b> mm or more in 12 h, solid of <b data-draw="thr-snow" data-source="thr" data-field="threshold" data-where="kind=snow12">—</b> mm or more in 12 h, frost of <b data-draw="thr-frost" data-source="thr" data-field="threshold" data-where="kind=frost">—</b> °C or colder, heat of <b data-draw="thr-heat" data-source="thr" data-field="threshold" data-where="kind=heat">—</b> °C or more. The ensemble mean is checked (warning) and the extreme member — P90, or P10 for frost (“possible”). Values rounded to 0.1 are compared.</li>
-      <li>12-hour precipitation is the sum of hours ending within the 12 hours up to a forecast time; for each day the highest such sum is used. For “possible”, hourly P90 values are added up — a rough upper estimate, since hourly percentiles do not add up to the percentile of the sum.</li>
-      <li>Precipitation phase: an hour’s precipitation counts as solid when the ensemble-mean temperature is at or below the threshold temperature (<b data-draw="tcr" data-source="info" data-field="value" data-where="key=phase_threshold_c">—</b> °C for the point’s elevation).</li>
-      <li>Relative humidity is computed from the mean temperature and dew point (Magnus formula); wind direction from the mean 10 m wind components.</li>
-      <li>Days are Tashkent calendar days. An hour belongs to the day in which it ends. The first and last days of the period are partial.</li>
-      <li>Day weather icon: with 0.5 mm or more of precipitation in the day — rain, snow (solid at least 70 % of the total) or rain and snow; without precipitation — by mean daily cloud cover: under 30 % clear, 30–70 % partly cloudy, 70 % or more overcast.</li>
-    </ul>
-  </details>
-  <footer class="ec-foot" id="source">
-    <p data-l="ru">Источник данных: <a href="https://deepmind.google/technologies/weathernext/" target="_blank" rel="noopener">Google WeatherNext</a> — экспериментальные прогнозы погоды WeatherNext 3 (Google DeepMind) в реальном времени, набор статистик ансамбля. Данные предоставляются на условиях <a href="https://storage.googleapis.com/weathernext-public/terms-of-use.pdf" target="_blank" rel="noopener">GDM Real-Time Weather Forecasting Experimental Data Terms of Use</a> и используются в некоммерческих целях. Данные обработаны: выбран ближайший к точке узел сетки, единицы переведены, рассчитаны влажность, направление ветра, фаза осадков, суточные сводки и проверки опасных явлений. Google не несёт ответственности за эту обработку. Это экспериментальный модельный прогноз, а не наблюдения.</p>
-    <p data-l="en" lang="en">Data source: <a href="https://deepmind.google/technologies/weathernext/" target="_blank" rel="noopener">Google WeatherNext</a> — real-time experimental WeatherNext 3 weather forecasts (Google DeepMind), ensemble statistics dataset. The data are made available under the <a href="https://storage.googleapis.com/weathernext-public/terms-of-use.pdf" target="_blank" rel="noopener">GDM Real-Time Weather Forecasting Experimental Data Terms of Use</a> and are used for non-commercial purposes. The data have been processed: the grid node nearest to the point was selected, units converted, and humidity, wind direction, precipitation phase, daily summaries and hazard checks computed. Google is not responsible for this processing. This is an experimental model forecast, not observations.</p>
+  <footer class="ec-wrap ec-foot" id="source">
+    <p data-l="ru">Источник данных: <a href="https://deepmind.google/technologies/weathernext/" target="_blank" rel="noopener">Google WeatherNext</a> — экспериментальные прогнозы погоды WeatherNext 3 (Google DeepMind) в реальном времени, набор статистик ансамбля. Данные предоставляются на условиях <a href="https://storage.googleapis.com/weathernext-public/terms-of-use.pdf" target="_blank" rel="noopener">GDM Real-Time Weather Forecasting Experimental Data Terms of Use</a> и используются в некоммерческих целях. Данные обработаны: выбран ближайший к точке узел сетки, единицы переведены, рассчитаны влажность, направление ветра, температура по ощущению, фаза осадков, суточные сводки и проверки опасных явлений. Google не несёт ответственности за эту обработку. Это экспериментальный модельный прогноз, а не наблюдения.</p>
+    <p data-l="en" lang="en">Data source: <a href="https://deepmind.google/technologies/weathernext/" target="_blank" rel="noopener">Google WeatherNext</a> — real-time experimental WeatherNext 3 weather forecasts (Google DeepMind), ensemble statistics dataset. The data are made available under the <a href="https://storage.googleapis.com/weathernext-public/terms-of-use.pdf" target="_blank" rel="noopener">GDM Real-Time Weather Forecasting Experimental Data Terms of Use</a> and are used for non-commercial purposes. The data have been processed: the grid node nearest to the point was selected, units converted, and humidity, wind direction, apparent temperature, precipitation phase, daily summaries and hazard checks computed. Google is not responsible for this processing. This is an experimental model forecast, not observations.</p>
     <p class="ec-attr" lang="en">© 2024-6 Google LLC, whose machine learning models were used to create the experimental data made available under the following licence terms <a href="https://storage.googleapis.com/weathernext-public/terms-of-use.pdf" target="_blank" rel="noopener">https://storage.googleapis.com/weathernext-public/terms-of-use.pdf</a>. This data is intended for experimental modelling only and is not intended, validated, or approved for real world use.</p>
   </footer>
 </div>
 
 <script>
+
   /* ---------- Данные: файл с расчётами (набор src); страница выбирает лист по своим параметрам ---------- */
   dash.calc('runs', {
     title: "Список сохранённых расчётов",
@@ -572,9 +589,11 @@
       });
     },
   });
+
 </script>
 
 <script>
+
   /* ---------- Общие помощники ---------- */
   const EC = (window.EC = {});
   EC.L = () => (dash.params().lang === 'en' ? 'en' : 'ru');
@@ -598,6 +617,24 @@
       td: 'dew point', w100: 'at 100 m', w10: 'at 10 m', sh: 'station', main: 'main', imerg: 'IMERG', exp: 'exper.',
       cv: [['t', 'Hourly air temperature, °C'], ['pd', 'Daily precipitation, mm'], ['pc', 'Cumulative precipitation, mm'], ['ph', 'Hourly precipitation, mm']], aCmp: 'Comparison of WeatherNext forecast variants'},
   };
+
+  Object.assign(EC.TR.ru, {aMeteo: 'Метеограмма: температура и точка росы, осадки по часам, ветер со стрелками направления, облачность',
+    tT: 'Температура, °C', tP: 'Осадки за час, мм', tW: 'Ветер, м/с', tC: 'Облачность, %', noP: 'Осадков нет',
+    lT: 'Температура', lP: 'Осадки', lW: 'Ветер', lC: 'Облачность', lM: 'Давление', lmh: 'н/с/в', rh: 'влажн.', from: 'с', w100s: '100 м',
+    spread: 'Разброс P10–P90:', partOf: 'неполные сутки,', runOf: 'Расчёт', mj: 'МДж/м²'});
+  Object.assign(EC.TR.en, {aMeteo: 'Meteogram: temperature and dew point, hourly precipitation, wind with direction arrows, cloud cover',
+    tT: 'Temperature, °C', tP: 'Precipitation per hour, mm', tW: 'Wind, m/s', tC: 'Cloud cover, %', noP: 'No precipitation',
+    lT: 'Temperature', lP: 'Precipitation', lW: 'Wind', lC: 'Cloud cover', lM: 'Pressure', lmh: 'l/m/h', rh: 'RH', from: 'from', w100s: '100 m',
+    spread: 'P10–P90 spread:', partOf: 'partial day,', runOf: 'Run', mj: 'MJ/m²'});
+  /* «Другие параметры»: выпадающий список и подписи линий */
+  Object.assign(EC.TR.ru, {xv: [['cl', 'Облачность по ярусам, %'], ['pp', 'Осадки за час: разброс, мм'], ['pls', 'Осадки нарастающим итогом: жидкие и твёрдые, мм'],
+      ['at', 'Температура по ощущению, °C'], ['dd', 'Дефицит точки росы (T − Td), °C'], ['wd', 'Направление ветра (откуда дует)']],
+    xTot: 'общая', xLow: 'нижняя', xMid: 'средняя', xHigh: 'верхняя', xSum: 'всего', xAT: 'по ощущению', xT: 'температура воздуха',
+    xDD: 'T − Td', xWD: 'направление ветра на 10 м', aMore: 'Дополнительный параметр прогноза по часам'});
+  Object.assign(EC.TR.en, {xv: [['cl', 'Cloud cover by level, %'], ['pp', 'Hourly precipitation: spread, mm'], ['pls', 'Cumulative precipitation: liquid and solid, mm'],
+      ['at', 'Apparent temperature, °C'], ['dd', 'Dew-point depression (T − Td), °C'], ['wd', 'Wind direction (blowing from)']],
+    xTot: 'total', xLow: 'low', xMid: 'middle', xHigh: 'high', xSum: 'total', xAT: 'apparent', xT: 'air temperature',
+    xDD: 'T − Td', xWD: '10 m wind direction', aMore: 'Additional hourly forecast parameter'});
   EC.tr = (k) => EC.TR[EC.L()][k];
   EC.MAIN = 'var(--c-main)';
   EC.spread = () => dash.params().spread !== 'off';
@@ -677,11 +714,11 @@
     let yDom = o.yDomain || d3.extent(ys);
     if (o.zero) yDom = [Math.min(0, yDom[0]), Math.max(0, yDom[1])];
     if (yDom[0] === yDom[1]) yDom = [yDom[0] - 1, yDom[1] + 1];
-    const y = d3.scaleLinear().domain(yDom).nice(5);
+    const y = d3.scaleLinear().domain(yDom); if (!o.yTicks) y.nice(5);
     const m = {t: 10, r: 12, b: 24, l: 10};
     const gy = svg.append('g');
     y.range([H - m.b, m.t]);
-    gy.call(d3.axisLeft(y).ticks(5).tickSize(0).tickPadding(6).tickFormat(o.yFmt || d3.format('~f')));
+    gy.call(d3.axisLeft(y).ticks(5).tickValues(o.yTicks || null).tickSize(0).tickPadding(6).tickFormat(o.yFmt || d3.format('~f')));
     let wl = 0; gy.selectAll('text').each(function () { wl = Math.max(wl, this.getComputedTextLength()); });
     m.l = Math.ceil(wl) + 10;
     const x = d3.scaleUtc().domain(xDom).range([m.l, W - m.r]);
@@ -700,9 +737,9 @@
     for (const b of bands) svg.append('path').datum(b.points).attr('d', area).style('fill', b.fill).attr('stroke', 'none');
     const line = d3.line().defined((p) => p.y != null).x((p) => x(p.x)).y((p) => y(p.y));
     for (const s of o.series) {
-      svg.append('path').datum(s.points).attr('fill', 'none').attr('stroke-width', s.dash ? 1.6 : 2).attr('stroke-dasharray', s.dash ? '5 4' : null).attr('d', line).style('stroke', s.color);
-      if (o.dots) svg.append('g').selectAll('circle').data(s.points.filter((p) => p.y != null)).join('circle')
-        .attr('cx', (p) => x(p.x)).attr('cy', (p) => y(p.y)).attr('r', s.dash ? 1.4 : 2).style('fill', s.color);
+      if (s.line !== false) svg.append('path').datum(s.points).attr('fill', 'none').attr('stroke-width', s.dash ? 1.6 : 2).attr('stroke-dasharray', s.dash ? '5 4' : null).attr('d', line).style('stroke', s.color);
+      if (o.dots || s.line === false) svg.append('g').selectAll('circle').data(s.points.filter((p) => p.y != null)).join('circle')
+        .attr('cx', (p) => x(p.x)).attr('cy', (p) => y(p.y)).attr('r', s.line === false ? 2.6 : s.dash ? 1.4 : 2).style('fill', s.color);
     }
     const tip = document.createElement('div'); tip.className = 'ec-tip'; tip.hidden = true; el.appendChild(tip);
     const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
@@ -787,18 +824,201 @@
       .on('pointerleave', () => { tip.hidden = true; })
       .on('click', (ev, r) => { if (o.onPick) o.onPick(r.x); });
   };
+
+  /* ---------- Метеограмма: температура, осадки, ветер, облачность на общей оси времени ---------- */
+  EC.range = () => {
+    const rs = EC.rows('hourly').filter((r) => EC.parseT(r.local));
+    if (!rs.length) return null;
+    if (dash.params().view === 'day') {
+      const d = EC.parseD(EC.day() || '');
+      if (d) return [d, new Date(+d + 86400000)];
+    }
+    return [new Date(+EC.parseT(rs[0].local) - 3600000), EC.parseT(rs[rs.length - 1].local)];
+  };
+  EC.ns = 'http://www.w3.org/2000/svg';
+  EC.meteo = (el) => {
+    el.replaceChildren();
+    const all = EC.rows('hourly').map((r) => Object.assign({}, r, {t: EC.parseT(r.local)})).filter((r) => r.t);
+    const dom = EC.range();
+    if (!all.length || !dom) { const n = document.createElement('div'); n.className = 'ec-fail'; n.textContent = EC.tr('none'); el.appendChild(n); return; }
+    const dayMode = dash.params().view === 'day';
+    const [x0, x1] = dom;
+    const rows = all.filter((r) => r.t > x0 && +r.t <= +x1);
+    const sp = EC.spread();
+    const W = Math.max(300, el.clientWidth || 900);
+    const m = {l: 40, r: 30};
+    const x = d3.scaleUtc().domain([x0, x1]).range([m.l, W - m.r]);
+    const pxh = (W - m.l - m.r) / ((+x1 - +x0) / 3600000);
+    const P = [{k: 't', h: W < 560 ? 150 : 180}, {k: 'p', h: 80}, {k: 'w', h: 100}, {k: 'c', h: 56}];
+    let y0 = 30;
+    for (const p of P) { p.top = y0 + 20; p.bot = p.top + p.h; y0 = p.bot + 14; }
+    const H = y0 + 14;
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', EC.tr('aMeteo'));
+    const defs = svg.append('defs');
+    const pat = defs.append('pattern').attr('id', 'ec-hatch-meteo').attr('width', 5).attr('height', 5).attr('patternUnits', 'userSpaceOnUse').attr('patternTransform', 'rotate(45)');
+    pat.append('rect').attr('width', 5).attr('height', 5).attr('fill', '#cfe6ff').attr('opacity', 0.25);
+    pat.append('rect').attr('width', 2.2).attr('height', 5).attr('fill', '#e6f3fc');
+    const clip = defs.append('clipPath').attr('id', 'ec-clip-meteo').append('rect').attr('x', m.l).attr('y', 0).attr('width', W - m.l - m.r).attr('height', H);
+    const top = P[0].top, bot = P[P.length - 1].bot;
+    const g = svg.append('g');
+    const gc = svg.append('g').attr('clip-path', 'url(#ec-clip-meteo)');
+    /* выбранный день */
+    const sel = EC.parseD(EC.day() || '');
+    if (sel && !dayMode) {
+      const a = Math.max(x(sel), m.l), b = Math.min(x(new Date(+sel + 86400000)), W - m.r);
+      if (b > a) g.append('rect').attr('x', a).attr('y', top - 20).attr('width', b - a).attr('height', bot - top + 20).attr('fill', 'var(--c-band)').attr('rx', 4);
+    }
+    /* полночи и подписи дней */
+    const t = EC.TR[EC.L()];
+    for (let d = d3.utcDay.floor(x0); +d < +x1; d = d3.utcDay.offset(d, 1)) {
+      const nx = d3.utcDay.offset(d, 1);
+      if (+d > +x0) g.append('line').attr('x1', x(d)).attr('x2', x(d)).attr('y1', top - 20).attr('y2', bot).attr('stroke', '#33465a').attr('stroke-width', 1);
+      const a = Math.max(x(d), m.l), b = Math.min(x(nx), W - m.r);
+      if (b - a > 34) {
+        const lab = (b - a > 90 ? t.wd[d.getUTCDay()] + ' ' : '') + EC.fmtDM(d);
+        g.append('text').attr('class', 'ec-dayl').attr('x', (a + b) / 2).attr('y', 16).attr('text-anchor', 'middle').text(lab);
+      }
+    }
+    /* панели */
+    const titles = {t: EC.tr('tT'), p: EC.tr('tP'), w: EC.tr('tW'), c: EC.tr('tC')};
+    const ext = (arr) => { const v = arr.filter((z) => z != null && Number.isFinite(z)); return v.length ? [d3.min(v), d3.max(v)] : [0, 1]; };
+    const Y = {};
+    for (const p of P) {
+      let dd;
+      if (p.k === 't') dd = ext(rows.flatMap((r) => (sp ? [r.t_p10, r.t_p90] : []).concat([r.t_mean, r.td_mean])));
+      else if (p.k === 'p') dd = [0, Math.max(0.5, d3.max(rows, (r) => (sp ? Math.max(r.p_mean || 0, 0) : r.p_mean || 0)) || 0)];
+      else if (p.k === 'w') dd = [0, Math.max(2, d3.max(rows, (r) => Math.max(sp ? r.w10_p90 || 0 : r.w10_mean || 0, r.w100_mean || 0)) || 0)];
+      else dd = [0, 100];
+      if (dd[0] === dd[1]) dd = [dd[0] - 1, dd[1] + 1];
+      const y = d3.scaleLinear().domain(dd).range([p.bot, p.top]);
+      if (p.k !== 'c') y.nice(p.k === 't' ? 5 : 3);
+      Y[p.k] = y;
+      const ticks = p.k === 'c' ? [0, 50, 100] : y.ticks(p.k === 't' ? 5 : 3);
+      const ga = g.append('g');
+      for (const v of ticks) {
+        ga.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', 'var(--cds-chart-grid)');
+        ga.append('text').attr('class', 'ec-ax-label').attr('x', m.l - 6).attr('y', y(v)).attr('dy', '0.32em').attr('text-anchor', 'end').text(d3.format('~f')(v));
+      }
+      g.append('text').attr('class', 'ec-pt-u').attr('x', m.l).attr('y', p.top - 7).text(titles[p.k]);
+    }
+    const X = (r) => x(r.t);
+    /* температура */
+    const yt = Y.t;
+    if (sp) {
+      const area = (lo, hi) => d3.area().defined((r) => r[lo] != null && r[hi] != null).x(X).y0((r) => yt(r[lo])).y1((r) => yt(r[hi]));
+      gc.append('path').datum(rows).attr('d', area('t_p10', 't_p90')).style('fill', 'var(--c-temp-90)');
+      gc.append('path').datum(rows).attr('d', area('t_p25', 't_p75')).style('fill', 'var(--c-temp-75)');
+    }
+    const line = (f, y) => d3.line().defined((r) => r[f] != null).x(X).y((r) => y(r[f]));
+    gc.append('path').datum(rows).attr('d', line('td_mean', yt)).attr('fill', 'none').style('stroke', 'var(--c-td)').attr('stroke-width', 1.5).attr('stroke-dasharray', '5 4');
+    gc.append('path').datum(rows).attr('d', line('t_mean', yt)).attr('fill', 'none').style('stroke', 'var(--c-temp)').attr('stroke-width', 2.4);
+    /* подписи максимумов и минимумов по суткам */
+    const byDay = d3.group(rows.filter((r) => r.t_mean != null), (r) => r.local.slice(0, 10));
+    const placed = [];
+    for (const [, rs] of byDay) {
+      if (rs.length < 4) continue;
+      const hi = rs.reduce((a, b) => (b.t_mean > a.t_mean ? b : a)), lo = rs.reduce((a, b) => (b.t_mean < a.t_mean ? b : a));
+      for (const [r, up] of [[hi, true], [lo, false]]) {
+        const cx = X(r), cy = yt(r.t_mean), ly = up ? cy - 8 : cy + 15;
+        if (placed.some((q) => Math.abs(q[0] - cx) < 40 && Math.abs(q[1] - ly) < 16)) continue;
+        placed.push([cx, ly]);
+        gc.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 3).style('fill', 'var(--c-temp)');
+        gc.append('text').attr('class', 'ec-pt').attr('x', Math.max(m.l + 12, Math.min(W - m.r - 12, cx))).attr('y', ly).attr('text-anchor', 'middle').text(EC.f1(r.t_mean) + '°');
+      }
+    }
+    const last = rows[rows.length - 1];
+    if (last) {
+      svg.append('text').attr('class', 'ec-endl').attr('x', W - m.r + 4).attr('y', yt(last.t_mean)).attr('dy', '0.32em').style('fill', 'var(--c-temp)').text('T');
+      if (last.td_mean != null) svg.append('text').attr('class', 'ec-endl').attr('x', W - m.r + 4).attr('y', yt(last.td_mean)).attr('dy', '0.32em').style('fill', 'var(--c-td)').text('Td');
+    }
+    /* осадки */
+    const yp = Y.p, bw = Math.max(1, pxh - (pxh > 6 ? 1.5 : 0.5));
+    let anyP = false;
+    for (const r of rows) {
+      const liq = r.liquid_mm || 0, sol = r.solid_mm || 0;
+      const bx = x(new Date(+r.t - 3600000)) + (pxh - bw) / 2;
+      if (liq + sol >= 0.005) anyP = true;
+      if (liq > 0) gc.append('rect').attr('x', bx).attr('width', bw).attr('y', yp(liq)).attr('height', yp(0) - yp(liq)).style('fill', 'var(--c-rain)');
+      if (sol > 0) gc.append('rect').attr('x', bx).attr('width', bw).attr('y', yp(liq + sol)).attr('height', yp(liq) - yp(liq + sol)).attr('fill', 'url(#ec-hatch-meteo)');
+    }
+    if (!anyP) g.append('text').attr('class', 'ec-pt-u').attr('x', (m.l + W - m.r) / 2).attr('y', (P[1].top + P[1].bot) / 2).attr('dy', '0.32em').attr('text-anchor', 'middle').text(EC.tr('noP'));
+    /* ветер */
+    const yw = Y.w;
+    if (sp) gc.append('path').datum(rows).attr('d', d3.area().defined((r) => r.w10_p10 != null).x(X).y0((r) => yw(r.w10_p10)).y1((r) => yw(r.w10_p90))).style('fill', 'var(--c-wind-90)');
+    gc.append('path').datum(rows).attr('d', line('w100_mean', yw)).attr('fill', 'none').style('stroke', 'var(--c-wind)').attr('stroke-width', 1.3).attr('stroke-dasharray', '4 4').attr('opacity', 0.7);
+    gc.append('path').datum(rows).attr('d', line('w10_mean', yw)).attr('fill', 'none').style('stroke', 'var(--c-wind)').attr('stroke-width', 2.2);
+    if (last) {
+      svg.append('text').attr('class', 'ec-endl').attr('x', W - m.r + 4).attr('y', yw(last.w10_mean)).attr('dy', '0.32em').style('fill', 'var(--c-wind)').text('10');
+      if (last.w100_mean != null && Math.abs(yw(last.w100_mean) - yw(last.w10_mean)) > 10) svg.append('text').attr('class', 'ec-endl').attr('x', W - m.r + 4).attr('y', yw(last.w100_mean)).attr('dy', '0.32em').style('fill', 'var(--c-wind)').attr('opacity', 0.75).text('100');
+    }
+    const step = [1, 2, 3, 6, 12].find((s) => s * pxh >= 26) || 12;
+    for (const r of rows) {
+      if (r.wdir_deg == null || r.t.getUTCHours() % step) continue;
+      const ax = X(r), ay = P[2].top + 9;
+      gc.append('path').attr('d', 'M0,-6 L4.5,4.5 L0,2 L-4.5,4.5 Z').attr('transform', `translate(${ax},${ay}) rotate(${(r.wdir_deg + 180) % 360})`).style('fill', 'var(--color-fg-muted)');
+    }
+    /* облачность */
+    const yc = Y.c;
+    gc.append('path').datum(rows).attr('d', d3.area().defined((r) => r.tcc_mean != null).x(X).y0(yc(0)).y1((r) => yc(r.tcc_mean))).style('fill', 'var(--c-cloud)').attr('opacity', 0.55);
+    /* ось часов */
+    const hs = [3, 6, 12].find((s) => s * pxh >= 34) || 12;
+    const gx = svg.append('g').attr('transform', `translate(0,${bot})`)
+      .call(d3.axisBottom(x).ticks(d3.utcHour.every(hs)).tickSize(4).tickFormat((d) => (d.getUTCHours() === 0 ? '' : d3.utcFormat('%H')(d))));
+    gx.select('.domain').attr('stroke', 'var(--cds-chart-axis)');
+    /* курсор и подсказка */
+    const tip = document.createElement('div'); tip.className = 'ec-tip'; tip.hidden = true; el.appendChild(tip);
+    const rule = svg.append('line').attr('y1', top - 20).attr('y2', bot).attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
+    const dots = svg.append('g').attr('visibility', 'hidden');
+    const dT = dots.append('circle').attr('r', 4).style('fill', 'var(--c-temp)').attr('stroke', '#0b1219').attr('stroke-width', 1.5);
+    const dW = dots.append('circle').attr('r', 3.5).style('fill', 'var(--c-wind)').attr('stroke', '#0b1219').attr('stroke-width', 1.5);
+    const near = (px) => { const v = +x.invert(px); let best = rows[0]; for (const r of rows) if (Math.abs(+r.t - v) < Math.abs(+best.t - v)) best = r; return best; };
+    const row = (color, label, value, extra) => {
+      const d = document.createElement('div');
+      const k = document.createElement('span'); k.className = 'k'; k.style.background = color;
+      const n = document.createElement('span'); n.className = 'm'; n.textContent = label + ' ';
+      const v = document.createElement('b'); v.textContent = value;
+      d.append(k, n, v);
+      if (extra) { const e = document.createElement('span'); e.className = 'm'; e.textContent = ' ' + extra; d.appendChild(e); }
+      tip.appendChild(d);
+    };
+    svg.append('rect').attr('x', m.l).attr('y', top - 20).attr('width', W - m.l - m.r).attr('height', bot - top + 20).attr('fill', 'transparent').style('cursor', 'pointer')
+      .on('pointermove', (ev) => {
+        if (!rows.length) return;
+        const r = near(d3.pointer(ev)[0]);
+        const cx = X(r);
+        rule.attr('x1', cx).attr('x2', cx).attr('visibility', 'visible');
+        dots.attr('visibility', 'visible');
+        dT.attr('cx', cx).attr('cy', yt(r.t_mean)); dW.attr('cx', cx).attr('cy', yw(r.w10_mean));
+        tip.replaceChildren();
+        const h = document.createElement('div'); const hb = document.createElement('b');
+        hb.textContent = t.wd[r.t.getUTCDay()] + ' ' + EC.fmtDMH(r.t); h.appendChild(hb); tip.appendChild(h);
+        const u = (k) => ' ' + EC.tr(k);
+        row('var(--c-temp)', EC.tr('lT'), EC.f1(r.t_mean) + u('c'), 'P10–P90 ' + EC.f1(r.t_p10) + '…' + EC.f1(r.t_p90));
+        row('var(--c-td)', EC.tr('td'), EC.f1(r.td_mean) + u('c'));
+        row('var(--c-rain)', EC.tr('lP'), (Math.round((r.p_mean || 0) * 100) / 100).toFixed(2) + u('mm'), (r.solid_mm > 0 ? EC.tr('solid') + ' ' + (Math.round(r.solid_mm * 100) / 100).toFixed(2) + ', ' : '') + 'P90 ' + (Math.round((r.p_p90 || 0) * 100) / 100).toFixed(2));
+        const dir = r.wdir_deg == null ? '' : EC.tr('from') + ' ' + EC.tr('dirs')[Math.round((((r.wdir_deg % 360) + 360) % 360) / 45) % 8] + ', ';
+        row('var(--c-wind)', EC.tr('lW'), EC.f1(r.w10_mean) + u('ms'), dir + EC.tr('w100s') + ' ' + EC.f1(r.w100_mean));
+        row('var(--c-cloud)', EC.tr('lC'), EC.f0(r.tcc_mean) + ' %', EC.tr('lmh') + ' ' + EC.f0(r.lcc) + '/' + EC.f0(r.mcc) + '/' + EC.f0(r.hcc));
+        EC.tipPlace(tip, W, cx, top);
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); dots.attr('visibility', 'hidden'); })
+      .on('click', (ev) => { const r = near(d3.pointer(ev)[0]); if (r) EC.pickDay(r.local.slice(0, 10)); });
+  };
+
 </script>
 
 <script>
-  /* ---------- Язык, место, архив, разброс, устаревание: только классы, hidden и aria ---------- */
+  /* ---------- Переключатели: только классы, hidden и aria ---------- */
   for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.addEventListener('click', () => dash.setParams({lang: b.getAttribute('data-lang-btn')}));
   for (const b of document.querySelectorAll('#dash-root [data-spread-btn]')) b.addEventListener('click', () => dash.setParams({spread: b.getAttribute('data-spread-btn')}));
+  for (const b of document.querySelectorAll('#dash-root [data-view-btn]')) b.addEventListener('click', () => dash.setParams({view: b.getAttribute('data-view-btn')}));
   dash.onData(() => {
     const en = EC.L() === 'en';
     for (const r of document.querySelectorAll('#dash-root .ec')) r.classList.toggle('ec-en', en);
-    for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-lang-btn') === EC.L()));
-    const sp = EC.spread() ? 'on' : 'off';
-    for (const b of document.querySelectorAll('#dash-root [data-spread-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-spread-btn') === sp));
+    const press = (attr, val) => { for (const b of document.querySelectorAll('#dash-root [' + attr + ']')) b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)); };
+    press('data-lang-btn', EC.L());
+    press('data-spread-btn', EC.spread() ? 'on' : 'off');
+    press('data-view-btn', dash.params().view === 'day' ? 'day' : 'all');
     const run = dash.params().run || 'latest';
     for (const p of document.querySelectorAll('#dash-root [data-pill="arch"]')) p.hidden = run === 'latest';
     const age = dash.data('age_h');
@@ -810,10 +1030,12 @@
     const cv = (dash.params().cvar || 't') === 't' ? 't' : 'p';
     for (const p of document.querySelectorAll('#dash-root [data-cv]')) p.hidden = p.getAttribute('data-cv') !== cv;
   });
+
 </script>
 
 <script>
-  /* ---------- Шапка ---------- */
+
+  /* ---------- Тексты шапки ---------- */
   const ecText = (name, fn) => dash.draw(name, (el) => { const v = fn(); el.textContent = v == null || v === '' ? '—' : v; });
   ecText('place-ru', () => EC.info('place_ru'));
   ecText('place-en', () => EC.info('place_en'));
@@ -826,10 +1048,11 @@
   ecText('elev', () => EC.info('elev_m'));
   ecText('tcr', () => { const v = Number(EC.info('phase_threshold_c')); return Number.isFinite(v) ? EC.f1(v) : null; });
   const ecPer = (f) => () => { const r = EC.rows('period')[0]; return r ? EC.f1(r[f]) : null; };
-  for (const [n, f] of [['tmin', 'tmin_c'], ['tmax', 'tmax_c'], ['tmin-p10', 'tmin_p10_c'], ['tmax-p90', 'tmax_p90_c'], ['psum', 'precip_mm'], ['psol', 'solid_mm']]) ecText(n, ecPer(f));
+  for (const [n, f] of [['tmin', 'tmin_c'], ['tmax', 'tmax_c'], ['psum', 'precip_mm']]) ecText(n, ecPer(f));
   for (const [n, k] of [['thr-wind', 'wind'], ['thr-rain', 'rain12'], ['thr-snow', 'snow12'], ['thr-frost', 'frost'], ['thr-heat', 'heat']]) {
     ecText(n, () => { const r = EC.rows('thr').find((x) => x.kind === k); return r ? EC.f0(r.threshold) : null; });
   }
+  ecText('rose-day', () => { const d = EC.day(); return d ? EC.dayLabel(d, true) : null; });
 
   dash.draw('place-btns', (el) => {
     el.replaceChildren();
@@ -851,11 +1074,57 @@
     const runs = EC.rows('runs').filter((r) => r.place === EC.place()).sort((a, b) => (a.run_id < b.run_id ? 1 : -1));
     const cur = dash.params().run || 'latest';
     const opts = [new Option(EC.tr('latest'), 'latest')];
-    for (const r of runs) opts.push(new Option((r.requested_local || r.run_id) + ' · ' + EC.tr('run') + ' ' + (r.init_utc || '').slice(5, 16).replace('T', ' ') + ' UTC', r.run_id));
+    for (const r of runs) opts.push(new Option(EC.tr('runOf') + ' ' + (r.requested_local || r.run_id), r.run_id));
     sel.replaceChildren(...opts);
     sel.value = [...sel.options].some((o) => o.value === cur) ? cur : 'latest';
     sel.onchange = () => dash.setParams({run: sel.value, day: null});
   });
+
+  /* ---------- Выбранный день крупно ---------- */
+  EC.dayRow = () => { const d = EC.day(); return EC.rows('daily').find((r) => r.date_local === d) || null; };
+  EC.mk = (field, txt, cls) => {
+    const s = document.createElement('span'); s.textContent = txt; if (cls) s.className = cls;
+    const d = EC.day();
+    s.setAttribute('data-source', 'daily'); s.setAttribute('data-field', field); s.setAttribute('data-where', 'date_local=' + EC.enc(d || ''));
+    return s;
+  };
+  EC.unitSpan = (k) => { const u = document.createElement('span'); u.className = 'u'; u.textContent = EC.tr(k); return u; };
+  dash.draw('hero-when', (el) => {
+    const d = EC.day(), r = EC.dayRow();
+    if (!d) { el.textContent = '—'; return; }
+    const s = EC.dayLabel(d, true);
+    el.textContent = s.charAt(0).toUpperCase() + s.slice(1) + (r && r.n != null && r.n < 24 ? ' · ' + EC.tr('partOf') + ' ' + r.n + ' ' + EC.tr('h') : '');
+  });
+  dash.draw('hero-ico', (el) => {
+    el.replaceChildren();
+    const r = EC.dayRow(); if (!r) return;
+    const w = EC.wx(r);
+    const s = EC.icon(w, EC.WX[w][EC.L() === 'en' ? 1 : 0]); s.setAttribute('class', 'ec-hero-ico');
+    el.appendChild(s);
+  });
+  dash.draw('hero-t', (el) => {
+    const r = EC.dayRow();
+    if (!r) { el.textContent = '—'; return; }
+    const sep = document.createElement('span'); sep.className = 'sep'; sep.textContent = '–';
+    el.replaceChildren(EC.mk('tmin_c', EC.f1(r.tmin_c)), sep, EC.mk('tmax_c', EC.f1(r.tmax_c)), EC.unitSpan('c'));
+  });
+  dash.draw('hero-sp', (el) => {
+    const r = EC.dayRow();
+    if (!r) { el.textContent = '—'; return; }
+    el.replaceChildren(document.createTextNode(EC.tr('spread') + ' '), EC.mk('tmin_p10_c', EC.f1(r.tmin_p10_c)), document.createTextNode(' … '),
+      EC.mk('tmax_p90_c', EC.f1(r.tmax_p90_c)), document.createTextNode(' °C'));
+  });
+  const ecStat = (name, field, unit, fmt) => dash.draw(name, (el) => {
+    const r = EC.dayRow();
+    if (!r || r[field] == null) { el.textContent = '—'; return; }
+    el.replaceChildren(EC.mk(field, (fmt || EC.f1)(r[field])), EC.unitSpan(unit));
+  });
+  ecStat('st-p', 'precip_mm', 'mm');
+  ecStat('st-w', 'wind_max_ms', 'ms');
+  ecStat('st-c', 'tcc_mean_pct', 'pct', EC.f0);
+  ecStat('st-rh', 'rh_mean_pct', 'pct', EC.f0);
+  ecStat('st-msl', 'msl_mean_hpa', 'hpa', EC.f0);
+  ecStat('st-sun', 'ssr_mj_m2', 'mj', EC.f1);
 
   /* ---------- Опасные явления ---------- */
   EC.unit = (k) => ({wind: EC.tr('ms'), rain12: EC.tr('mm'), snow12: EC.tr('mm'), frost: EC.tr('c'), heat: EC.tr('c')}[k] || '');
@@ -870,71 +1139,143 @@
       b.setAttribute('data-source', 'hazards'); b.setAttribute('data-field', strong ? 'value' : 'value_ext');
       b.setAttribute('data-where', 'date_local=' + EC.enc(h.date_local) + '&kind=' + EC.enc(h.kind));
       const v = strong ? h.value : h.value_ext, w = EC.parseT(strong ? h.when_local : h.when_ext);
-      const ext = h.kind === 'frost' ? 'P10' : 'P90';
-      b.append(EC.bell(14), document.createTextNode(EC.dayLabel(h.date_local) + ' · ' + (EC.tr('kind')[h.kind] || h.kind)
-        + (strong ? '' : ' — ' + EC.tr('poss') + ', ' + ext) + ' ' + EC.f1(v) + ' ' + EC.unit(h.kind) + (w ? ' (' + EC.fmtH(w) + ')' : '')));
-      b.addEventListener('click', () => { EC.pickDay(h.date_local); const t = document.querySelector('#dash-root #day'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+      b.append(EC.bell(13), document.createTextNode(EC.dayLabel(h.date_local) + ' · ' + (EC.tr('kind')[h.kind] || h.kind)
+        + (strong ? '' : ' — ' + EC.tr('poss')) + ' ' + EC.f1(v) + ' ' + EC.unit(h.kind) + (w ? ' (' + EC.fmtH(w) + ')' : '')));
+      b.addEventListener('click', () => EC.pickDay(h.date_local));
       el.appendChild(b);
     }
   });
 
-  /* ---------- Карточки дней ---------- */
+  /* ---------- Карточки дней с общей шкалой температуры ---------- */
   dash.draw('days', (el) => {
     if (!EC.state(el, 'daily')) return;
     el.replaceChildren();
     const daily = EC.rows('daily'), haz = EC.rows('hazards'), sel = EC.day();
+    const lo = d3.min(daily, (r) => (r.tmin_p10_c != null ? r.tmin_p10_c : r.tmin_c)), hi = d3.max(daily, (r) => (r.tmax_p90_c != null ? r.tmax_p90_c : r.tmax_c));
+    const pos = (v) => (hi > lo && v != null ? Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100)) : 0);
     for (const r of daily) {
       const d = r.date_local;
+      const mk = (field, txt, cls) => { const s = document.createElement('span'); s.textContent = txt; if (cls) s.className = cls; s.setAttribute('data-source', 'daily'); s.setAttribute('data-field', field); s.setAttribute('data-where', 'date_local=' + EC.enc(d)); return s; };
       const card = document.createElement('button');
       card.type = 'button'; card.className = 'ec-day'; card.setAttribute('aria-pressed', String(d === sel));
       const head = document.createElement('div'); head.className = 'ec-day-h';
+      const pd = EC.parseD(d);
+      const wd = document.createElement('span'); wd.className = 'ec-day-w'; wd.textContent = pd ? EC.TR[EC.L()].wd[pd.getUTCDay()] : '';
       const dd = document.createElement('span'); dd.className = 'ec-day-d'; dd.textContent = EC.dayLabel(d);
-      const wd = document.createElement('span'); wd.className = 'ec-day-w';
-      const pd = EC.parseD(d); wd.textContent = pd ? EC.TR[EC.L()].wd[pd.getUTCDay()] : '';
-      head.append(dd, wd);
+      head.append(wd, dd);
       const lv = Math.max(0, ...haz.filter((h) => h.date_local === d).map((h) => h.level || 0));
       if (lv > 0) { const bell = document.createElement('span'); bell.className = 'ec-bell' + (lv === 1 ? ' poss' : ''); bell.appendChild(EC.bell(15)); head.appendChild(bell); }
-      card.appendChild(head);
-      const mk = (field, txt, cls) => { const s = document.createElement('span'); s.textContent = txt; if (cls) s.className = cls; s.setAttribute('data-source', 'daily'); s.setAttribute('data-field', field); s.setAttribute('data-where', 'date_local=' + EC.enc(d)); return s; };
+      else if (r.n != null && r.n < 24) { const p = document.createElement('span'); p.className = 'ec-day-part'; p.textContent = r.n + ' ' + EC.tr('h'); head.appendChild(p); }
+      const mid = document.createElement('div'); mid.className = 'ec-day-mid';
       const w = EC.wx(r);
-      const row = document.createElement('div'); row.className = 'ec-day-row';
-      const t = document.createElement('span'); t.className = 'ec-day-big';
-      t.append(mk('tmin_c', EC.f1(r.tmin_c)), document.createTextNode(' … '), mk('tmax_c', EC.f1(r.tmax_c)), document.createTextNode(' °C'));
-      const sp = document.createElement('span'); sp.className = 'ec-day-sp';
-      sp.append(document.createTextNode('P10–P90: '), mk('tmin_p10_c', EC.f1(r.tmin_p10_c)), document.createTextNode(' … '), mk('tmax_p90_c', EC.f1(r.tmax_p90_c)));
-      row.append(EC.icon(w, EC.WX[w][EC.L() === 'en' ? 1 : 0]), t, sp);
-      card.appendChild(row);
-      const x2 = document.createElement('span'); x2.className = 'ec-day-x';
-      x2.append(mk('precip_mm', EC.f1(r.precip_mm)), document.createTextNode(' ' + EC.tr('mm') + ' · '), mk('wind_max_ms', EC.f1(r.wind_max_ms)), document.createTextNode(' ' + EC.tr('ms')));
-      card.appendChild(x2);
-      if (r.n != null && r.n < 24) { const p = document.createElement('span'); p.className = 'ec-day-part'; p.textContent = EC.tr('part') + ' (' + r.n + ' ' + EC.tr('h') + ')'; card.appendChild(p); }
+      const x2 = document.createElement('div'); x2.className = 'ec-day-x';
+      const l1 = document.createElement('span'); const b1 = mk('precip_mm', EC.f1(r.precip_mm)); b1.style.fontWeight = '500'; b1.style.color = 'var(--color-fg)'; l1.append(b1, document.createTextNode(' ' + EC.tr('mm')));
+      const l2 = document.createElement('span'); const b2 = mk('wind_max_ms', EC.f1(r.wind_max_ms)); b2.style.fontWeight = '500'; b2.style.color = 'var(--color-fg)'; l2.append(b2, document.createTextNode(' ' + EC.tr('ms')));
+      x2.append(l1, l2);
+      mid.append(EC.icon(w, EC.WX[w][EC.L() === 'en' ? 1 : 0]), x2);
+      const bar = document.createElement('div'); bar.className = 'ec-tbar';
+      const track = document.createElement('span'); track.className = 'ec-track';
+      const sp = document.createElement('i'); sp.className = 'sp';
+      const a = pos(r.tmin_p10_c), b = pos(r.tmax_p90_c); sp.style.left = a + '%'; sp.style.width = Math.max(1, b - a) + '%';
+      const mn = document.createElement('i'); mn.className = 'mn';
+      const c = pos(r.tmin_c), e = pos(r.tmax_c); mn.style.left = c + '%'; mn.style.width = Math.max(2, e - c) + '%';
+      track.append(sp, mn);
+      bar.append(mk('tmin_c', EC.f1(r.tmin_c) + '°', 'ec-tbar-lo'), track, mk('tmax_c', EC.f1(r.tmax_c) + '°', 'ec-tbar-hi'));
+      card.append(head, mid, bar);
+      card.setAttribute('aria-label', EC.dayLabel(d, true) + ': ' + EC.WX[w][EC.L() === 'en' ? 1 : 0]);
       card.addEventListener('click', () => EC.pickDay(d));
       el.appendChild(card);
     }
   });
 
-  /* ---------- Весь период ---------- */
-  EC.band = () => { const d = EC.day(); const p = d && EC.parseD(d); return p ? [p, new Date(+p + 86400000)] : null; };
-  EC.toDay = (dt) => d3.utcFormat('%Y-%m-%d')(dt);
-  EC.tBands = (rows) => !EC.spread() ? [] : [
-    {label: 'P10–P90', fill: 'var(--c-sp90)', points: rows.map((r) => ({x: EC.parseT(r.local), lo: r.t_p10, hi: r.t_p90}))},
-    {label: 'P25–P75', fill: 'var(--c-sp75)', points: rows.map((r) => ({x: EC.parseT(r.local), lo: r.t_p25, hi: r.t_p75}))}];
-  dash.draw('period-t', (el) => {
+  /* ---------- Метеограмма и малые графики ---------- */
+  dash.draw('meteo', (el) => { if (!EC.state(el, 'hourly')) return; EC.meteo(el); });
+  const ecSmall = (name, mean, lo, hi, color, bandFill, unitKey, extra) => dash.draw(name, (el) => {
     if (!EC.state(el, 'hourly')) return;
-    const data = EC.rows('hourly').filter((r) => EC.parseT(r.local));
-    EC.lineChart(el, {series: [{label: EC.tr('mean'), color: EC.MAIN, points: data.map((r) => ({x: EC.parseT(r.local), y: r.t_mean}))}],
-      bands: EC.tBands(data), unit: EC.tr('c'), band: EC.band(), h: 230, aria: EC.tr('aT'), xFmt: EC.fmtDM,
-      xTicks: (n) => d3.utcDay.every(1), onPick: (dt) => EC.pickDay(EC.toDay(dt))});
+    const dom = EC.range(); const dayMode = dash.params().view === 'day';
+    const rs = EC.rows('hourly').filter((r) => { const t = EC.parseT(r.local); return t && dom && t > dom[0] && +t <= +dom[1]; });
+    const X = (r) => EC.parseT(r.local);
+    const bands = EC.spread() && lo ? [{label: 'P10–P90', fill: bandFill, points: rs.map((r) => ({x: X(r), lo: r[lo], hi: r[hi]}))}] : [];
+    EC.lineChart(el, Object.assign({series: [{label: EC.tr('mean'), color, points: rs.map((r) => ({x: X(r), y: r[mean]}))}], bands, unit: EC.tr(unitKey), h: 215,
+      xDomain: dom || undefined, band: dayMode ? null : EC.band(), aria: EC.tr('aDay') + mean, tickW: dayMode ? 46 : 60,
+      xFmt: dayMode ? d3.utcFormat('%H') : EC.fmtDM, xTicks: (n) => (dayMode ? d3.utcHour.every(n >= 8 ? 3 : 6) : d3.utcDay.every(1)),
+      onPick: (dt) => EC.pickDay(EC.toDay(dt))}, extra || {}));
   });
-  dash.draw('period-p', (el) => {
-    if (!EC.state(el, 'daily')) return;
-    const rows = EC.rows('daily').map((r) => ({x: EC.parseD(r.date_local), liquid: r.liquid_mm, solid: r.solid_mm, total: r.precip_mm, ext: r.precip_p90_mm})).filter((r) => r.x);
-    const sel = EC.day();
-    EC.barChart(el, {rows, id: 'pp', h: 140, aria: EC.tr('aP'), xFmt: EC.fmtDM, tipFmt: (d) => EC.dayLabel(d3.utcFormat('%Y-%m-%d')(d), true),
-      extLabel: 'Σ P90', pad: 0.45, selKeys: (k) => d3.utcFormat('%Y-%m-%d')(new Date(k)) === sel, onPick: (dt) => EC.pickDay(d3.utcFormat('%Y-%m-%d')(dt))});
+  ecSmall('x-msl', 'msl_mean', 'msl_p10', 'msl_p90', 'var(--c-msl)', 'rgba(183, 196, 209, .16)', 'hpa');
+  ecSmall('x-rh', 'rh_pct', null, null, 'var(--c-rh)', null, 'pct', {yDomain: [0, 100], vFmt: EC.f0});
+  ecSmall('x-sun', 'ssr_mean', 'ssr_p10', 'ssr_p90', 'var(--c-sun)', 'rgba(242, 193, 78, .18)', 'wm2', {zero: true, vFmt: EC.f0});
+
+  /* ---------- «Другие параметры»: один график, величина из списка (параметр xvar) ---------- */
+  const XV = ['cl', 'pp', 'pls', 'at', 'dd', 'wd'];
+  EC.xv = () => { const v = dash.params().xvar; return XV.includes(v) ? v : 'cl'; };
+  dash.draw('xvar', (sel) => {
+    sel.replaceChildren(...EC.tr('xv').map(([v, t]) => new Option(t, v)));
+    sel.value = EC.xv();
+    sel.onchange = () => dash.setParams({xvar: sel.value});
+  });
+  const mm = (v) => (Math.abs(v) < 10 ? (Math.round(v * 100) / 100).toFixed(2) : EC.f1(v));
+  /* Кажущаяся температура по Стедману (Bureau of Meteorology): AT = T + 0.33e − 0.70V − 4.00, e — парциальное давление пара, гПа */
+  const appT = (t, rh, v) => (t == null || rh == null || v == null ? null : t + 0.33 * (rh / 100) * 6.105 * Math.exp(17.27 * t / (237.7 + t)) - 0.70 * v - 4.00);
+  EC.xSeries = (rs) => {
+    const X = (r) => EC.parseT(r.local);
+    const P = (f) => rs.map((r) => ({x: X(r), y: r[f]}));
+    const B = (lo, hi) => rs.map((r) => ({x: X(r), lo: r[lo], hi: r[hi]}));
+    const sp = EC.spread();
+    switch (EC.xv()) {
+      case 'pp': return {unit: EC.tr('mm'), zero: true, vFmt: mm,
+        bands: sp ? [{label: 'P25–P75', fill: 'rgba(90, 169, 240, .30)', points: B('p_p25', 'p_p75')}] : [],
+        series: [{label: EC.tr('mean'), color: 'var(--c-rain)', points: P('p_mean')}, {label: 'P90', color: '#a8daf8', dash: true, points: P('p_p90')}]};
+      case 'pls': {
+        let a = 0, b = 0, c = 0; const tot = [], liq = [], sol = [];
+        for (const r of rs) {
+          a += r.p_mean || 0; b += r.liquid_mm || 0; c += r.solid_mm || 0;
+          tot.push({x: X(r), y: a}); liq.push({x: X(r), y: b}); sol.push({x: X(r), y: c});
+        }
+        return {unit: EC.tr('mm'), zero: true, vFmt: mm, bands: [], series: [{label: EC.tr('xSum'), color: 'var(--c-rain)', points: tot},
+          {label: EC.tr('liquid'), color: '#7fd3e6', dash: true, points: liq}, {label: EC.tr('solid'), color: '#f2faff', dash: true, points: sol}]};
+      }
+      case 'at': return {unit: EC.tr('c'), bands: [], series: [
+        {label: EC.tr('xAT'), color: '#f07c7c', points: rs.map((r) => ({x: X(r), y: appT(r.t_mean, r.rh_pct, r.w10_mean)}))},
+        {label: EC.tr('xT'), color: 'var(--c-temp)', dash: true, points: P('t_mean')}]};
+      case 'dd': return {unit: EC.tr('c'), zero: true, bands: [], series: [
+        {label: EC.tr('xDD'), color: 'var(--c-td)', points: rs.map((r) => ({x: X(r), y: r.t_mean == null || r.td_mean == null ? null : r.t_mean - r.td_mean}))}]};
+      case 'wd': {
+        const dirs = EC.tr('dirs');
+        return {unit: '', yDomain: [0, 360], yTicks: [0, 90, 180, 270, 360], yFmt: (v) => dirs[Math.round(v / 45) % 8],
+          vFmt: (v) => dirs[Math.round((((v % 360) + 360) % 360) / 45) % 8] + ' ' + Math.round(v) + '°', bands: [],
+          series: [{label: EC.tr('xWD'), color: 'var(--c-wind)', line: false, points: P('wdir_deg')}]};
+      }
+      default: return {unit: '%', yDomain: [0, 100], vFmt: EC.f0,
+        bands: sp ? [{label: EC.tr('xTot') + ' P10–P90', fill: 'rgba(135, 150, 168, .24)', points: B('tcc_p10', 'tcc_p90')}] : [],
+        series: [{label: EC.tr('xTot'), color: '#dfe6ee', points: P('tcc_mean')}, {label: EC.tr('xLow'), color: '#6fb6ee', points: P('lcc')},
+          {label: EC.tr('xMid'), color: '#4fd1a5', points: P('mcc')}, {label: EC.tr('xHigh'), color: '#c39af2', points: P('hcc')}]};
+    }
+  };
+  dash.draw('x-keys', (el) => {
+    const o = EC.xSeries([]);
+    el.replaceChildren();
+    const key = (sw, label) => { const k = document.createElement('span'); k.className = 'ec-key'; const t = document.createElement('span'); t.textContent = label; k.append(sw, t); el.appendChild(k); };
+    for (const s of o.series) {
+      const sw = document.createElement('span');
+      if (s.line === false) { sw.className = 'ec-sw ec-sw-box'; sw.style.borderRadius = '50%'; sw.style.width = sw.style.height = '7px'; sw.style.background = s.color; }
+      else if (s.dash) { sw.className = 'ec-sw ec-sw-dash2'; sw.style.color = s.color; }
+      else { sw.className = 'ec-sw'; sw.style.background = s.color; }
+      key(sw, s.label);
+    }
+    for (const b of o.bands) { const sw = document.createElement('span'); sw.className = 'ec-sw ec-sw-box'; sw.style.background = b.fill; key(sw, b.label); }
+  });
+  dash.draw('x-more', (el) => {
+    if (!EC.state(el, 'hourly')) return;
+    const dom = EC.range(); const dayMode = dash.params().view === 'day';
+    const rs = EC.rows('hourly').filter((r) => { const t = EC.parseT(r.local); return t && dom && t > dom[0] && +t <= +dom[1]; });
+    EC.lineChart(el, Object.assign({h: 215, xDomain: dom || undefined, band: dayMode ? null : EC.band(), aria: EC.tr('aMore'), tickW: dayMode ? 46 : 60,
+      xFmt: dayMode ? d3.utcFormat('%H') : EC.fmtDM, xTicks: (n) => (dayMode ? d3.utcHour.every(n >= 8 ? 3 : 6) : d3.utcDay.every(1)),
+      onPick: (dt) => EC.pickDay(EC.toDay(dt))}, EC.xSeries(rs)));
   });
 
-  /* ---------- Роза ветров ---------- */
+  /* ---------- Роза ветров, варианты, таблицы ---------- */
+  EC.band = () => { const d = EC.day(); const p = d && EC.parseD(d); return p ? [p, new Date(+p + 86400000)] : null; };
+  EC.toDay = (dt) => d3.utcFormat('%Y-%m-%d')(dt);
   dash.draw('rose', (el) => {
     if (!EC.state(el, 'wind_rose')) return;
     el.replaceChildren();
@@ -944,8 +1285,8 @@
     const CLS = ['#4a8cc9', '#6fb6ee', '#a8daf8', '#f2faff'];
     const tot = (dir) => rows.filter((r) => r.dir === dir).reduce((s, r) => s + r.pct, 0);
     const maxTot = Math.max(5, ...d3.range(8).map(tot));
-    const W = Math.max(240, el.clientWidth || 600);
-    const size = Math.max(220, Math.min(340, W));
+    const W = Math.max(180, el.clientWidth || 260);
+    const size = Math.max(180, Math.min(230, W));
     const tip = document.createElement('div'); tip.className = 'ec-tip'; tip.hidden = true; el.appendChild(tip);
     const fig = document.createElement('div'); fig.className = 'ec-rose'; fig.setAttribute('data-source', 'wind_rose');
     el.appendChild(fig);
@@ -956,7 +1297,6 @@
     const ticks = r.ticks(3).filter((v) => v > 0);
     svg.selectAll('circle.g').data(ticks).join('circle').attr('r', (v) => r(v)).attr('fill', 'none').attr('stroke', '#34485c');
     for (let dd = 0; dd < 8; dd++) { const aa = dd * Math.PI / 4; svg.append('line').attr('x1', 0).attr('y1', 0).attr('x2', Math.sin(aa) * R).attr('y2', -Math.cos(aa) * R).attr('stroke', '#2a3a4b'); }
-    svg.selectAll('text.g').data(ticks).join('text').attr('x', 3).attr('y', (v) => -r(v) - 2).text((v) => v + '%');
     const step = Math.PI / 4, pad = 0.06;
     for (let dir = 0; dir < 8; dir++) {
       let cum = 0;
@@ -988,38 +1328,10 @@
         })
         .on('pointerleave', () => { tip.hidden = true; });
     }
+      svg.append('g').selectAll('text').data(ticks).join('text').attr('x', (v) => Math.sin(Math.PI / 8) * r(v) + 2).attr('y', (v) => -Math.cos(Math.PI / 8) * r(v)).attr('class', 'ec-rose-tick').text((v) => v + '%');
   });
 
-  /* ---------- Выбранный день ---------- */
-  dash.draw('day-name', (el) => { const d = EC.day(); el.textContent = d ? EC.dayLabel(d, true) : '—'; });
-  EC.dayRows = () => { const d = EC.day(); return EC.rows('hourly').filter((r) => r.local && r.local.slice(0, 10) === d && EC.parseT(r.local)); };
-  EC.dayOpts = (extra) => Object.assign({h: 190, dots: true, xFmt: EC.fmtH, tickW: 52, xTicks: (n) => d3.utcHour.every(n >= 8 ? 3 : n >= 4 ? 6 : 12)}, extra);
-  const ecDayLine = (name, mean, lo, hi, unitKey, extra, more) => dash.draw(name, (el) => {
-    if (!EC.state(el, 'hourly')) return;
-    const rs = EC.dayRows(), X = (r) => EC.parseT(r.local);
-    const series = [{label: EC.tr('mean'), color: EC.MAIN, points: rs.map((r) => ({x: X(r), y: r[mean]}))}].concat(more ? more(rs, X) : []);
-    const bands = EC.spread() && lo ? [{label: 'P10–P90', fill: 'var(--c-sp90)', points: rs.map((r) => ({x: X(r), lo: r[lo], hi: r[hi]}))}] : [];
-    EC.lineChart(el, EC.dayOpts(Object.assign({series, bands, unit: EC.tr(unitKey), aria: EC.tr('aDay') + mean}, extra || {})));
-  });
-  dash.draw('day-t', (el) => {
-    if (!EC.state(el, 'hourly')) return;
-    const rs = EC.dayRows(), X = (r) => EC.parseT(r.local);
-    EC.lineChart(el, EC.dayOpts({series: [{label: EC.tr('mean'), color: EC.MAIN, points: rs.map((r) => ({x: X(r), y: r.t_mean}))},
-      {label: EC.tr('td'), color: 'var(--c-td)', dash: true, points: rs.map((r) => ({x: X(r), y: r.td_mean}))}],
-      bands: EC.tBands(rs), unit: EC.tr('c'), aria: EC.tr('aDay') + 't2m, td2m'}));
-  });
-  ecDayLine('day-msl', 'msl_mean', 'msl_p10', 'msl_p90', 'hpa');
-  ecDayLine('day-rh', 'rh_pct', null, null, 'pct', {yDomain: [0, 100], vFmt: EC.f0});
-  ecDayLine('day-w', 'w10_mean', 'w10_p10', 'w10_p90', 'ms', {zero: true}, (rs, X) => [{label: EC.tr('w100'), color: 'var(--c-td)', dash: true, points: rs.map((r) => ({x: X(r), y: r.w100_mean}))}]);
-  ecDayLine('day-c', 'tcc_mean', 'tcc_p10', 'tcc_p90', 'pct', {yDomain: [0, 100], vFmt: EC.f0});
-  ecDayLine('day-s', 'ssr_mean', 'ssr_p10', 'ssr_p90', 'wm2', {zero: true, vFmt: EC.f0});
-  dash.draw('day-p', (el) => {
-    if (!EC.state(el, 'hourly')) return;
-    const rows = EC.dayRows().map((r) => ({x: EC.parseT(r.local), liquid: r.liquid_mm, solid: r.solid_mm, total: r.p_mean, ext: r.p_p90}));
-    EC.barChart(el, {rows, id: 'dp', h: 190, minMax: 0.5, aria: EC.tr('aDay') + 'precip', xFmt: EC.fmtH, tipFmt: EC.fmtDMH, labW: 40, pad: 0.2});
-  });
 
-  /* ---------- Варианты прогноза ---------- */
   dash.draw('cvar', (sel) => {
     sel.replaceChildren(...EC.tr('cv').map(([v, t]) => new Option(t, v)));
     const cur = dash.params().cvar || 't';
@@ -1056,7 +1368,7 @@
       return;
     }
     EC.lineChart(el, Object.assign(base, {unit: EC.tr('c'), series: [
-      {label: 'temperature_2m', color: EC.MAIN, points: rs.map((r) => ({x: X(r), y: r.t_mean}))},
+      {label: 'temperature_2m', color: 'var(--c-temp)', points: rs.map((r) => ({x: X(r), y: r.t_mean}))},
       {label: 'station_head', color: 'var(--c-sh)', points: rs.map((r) => ({x: X(r), y: r.tsh_mean}))}]}));
   });
   dash.draw('cmp-table', (tb) => {
@@ -1141,6 +1453,7 @@
       tb.appendChild(tr);
     }
   });
+
 </script>
 </div>
 </body>
