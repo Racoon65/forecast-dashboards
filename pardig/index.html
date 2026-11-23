@@ -4,29 +4,112 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Осадки PARDIG: Ташкент и Чимган</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A7%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%A6%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
-  /* Значения оформления, которые на claude.ai задаёт движок дашбордов */
-  :root {
-    --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
-    --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
-    --cds-radius: 8px; --cds-font-weight-medium: 500;
-    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
-    --cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
-    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-anthropic-serif: Georgia, "Times New Roman", serif;
-    color-scheme: dark; background: #0b1219;
-  }
-  html, body { margin: 0; background: #0b1219; }
-  #dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
-    appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
-  .dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
-  @keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
-  @media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
-  a { color: #81cffe; }
+/* Значения оформления, которые на claude.ai задаёт движок дашбордов */
+:root {
+--cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 22px;
+--cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 14px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+--cds-radius: 8px; --cds-font-weight-medium: 500;
+--cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
+--cds-dur-slow: 220ms; --cds-ease-out: cubic-bezier(.2, .8, .2, 1);
+--font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-anthropic-serif: Georgia, "Times New Roman", serif;
+color-scheme: dark; background: #0b1219;
+}
+html, body { margin: 0; background: #0b1219; }
+#dash-root { max-width: 1240px; margin: 0 auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dash-select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 34px 6px 12px; border: 1px solid; border-radius: 8px;
+appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+.dash-skeleton { border-radius: 8px; background: linear-gradient(90deg, #15202b 0%, #1d2a37 50%, #15202b 100%); background-size: 200% 100%; animation: dsk 1.4s ease-in-out infinite; }
+@keyframes dsk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
+a { color: #81cffe; }
 </style>
+<script>
+/* Заменитель движка дашбордов для копии на GitHub Pages: параметры в адресной строке,
+   источник src = data.json рядом со страницей, перерисовка всего при каждом изменении. */
+(function () {
+  const DEF = {place: 'Tashkent', per: 'oct', step: '60', lang: 'ru', day: ''};
+  const P = {...DEF};
+  try { for (const [k, v] of new URLSearchParams(location.search)) P[k] = v; } catch (e) { /* без параметров */ }
+  const calcs = {}, draws = {}, onDatas = [], made = new Map();
+  let src = {status: 'loading', data: null, message: ''};
+  let cache = {};
+  const get = (id) => {
+    if (id === 'src') return src;
+    if (cache[id]) return cache[id];
+    const c = calcs[id];
+    if (!c) return {status: 'missing', data: null};
+    cache[id] = {status: 'loading', data: null};
+    const ins = c.inputs.map(get);
+    const bad = ins.find((x) => x.status !== 'ok');
+    if (bad) return (cache[id] = {status: bad.status, data: null, message: bad.message});
+    try { cache[id] = {status: 'ok', data: c.fn(...ins.map((x) => x.data))}; }
+    catch (e) { console.error('calc ' + id, e); cache[id] = {status: 'error', data: null, message: String(e)}; }
+    return cache[id];
+  };
+  const runDraw = (name, el) => {
+    const d = draws[name];
+    if (!d) return;
+    try {
+      if (typeof d === 'function') d(el);
+      else {
+        if (!made.has(el)) { el.replaceChildren(); made.set(el, d.mount ? d.mount(el) : undefined); }
+        if (d.update) d.update(el, made.get(el));
+      }
+    } catch (e) { console.error('draw ' + name, e); }
+  };
+  const root = () => document.getElementById('dash-root') || document.body;
+  const drawAll = (only) => {
+    for (const el of root().querySelectorAll('[data-draw]')) {
+      const name = el.getAttribute('data-draw');
+      if (only && name !== only) continue;
+      if (el.closest('[hidden]')) continue;
+      if (el.parentElement && el.parentElement.closest('[data-draw]')) continue;
+      runDraw(name, el);
+    }
+  };
+  let queued = false;
+  const render = () => {
+    queued = false;
+    cache = {};
+    for (const f of onDatas) { try { f(); } catch (e) { console.error('onData', e); } }
+    drawAll();
+  };
+  const later = () => { if (!queued) { queued = true; requestAnimationFrame(render); } };
+  const syncUrl = () => {
+    try {
+      const q = new URLSearchParams();
+      for (const [k, v] of Object.entries(P)) if (v !== '' && v != null && String(v) !== String(DEF[k] ?? '')) q.set(k, v);
+      const s = q.toString();
+      history.replaceState(null, '', location.pathname + (s ? '?' + s : '') + location.hash);
+    } catch (e) { /* адрес не меняется — не страшно */ }
+  };
+  window.dash = {
+    calc: (id, o) => { calcs[id] = o; },
+    loader: () => {},
+    draw: (name, fn) => { if (fn === undefined) drawAll(name); else draws[name] = fn; },
+    onData: (fn) => { onDatas.push(fn); },
+    data: (id) => { const r = get(id); return {status: r.status, data: r.status === 'ok' ? r.data : (calcs[id] ? null : []), message: r.message || '', refreshing: false, truncated: false}; },
+    params: () => ({...P}),
+    setParams: (o) => { for (const [k, v] of Object.entries(o || {})) { if (v == null) P[k] = DEF[k] ?? ''; else P[k] = String(v); } syncUrl(); render(); },
+    resetParams: () => { Object.keys(P).forEach((k) => delete P[k]); Object.assign(P, DEF); syncUrl(); render(); },
+    refresh: () => {}, setLink: () => {}, colors: ['#2f7fe8', '#81cffe', '#edddb6'],
+  };
+  const start = () => {
+    let w = 0;
+    try { new ResizeObserver((es) => { const nw = Math.round(es[0].contentRect.width); if (nw !== w) { w = nw; later(); } }).observe(root()); } catch (e) { addEventListener('resize', later); }
+    render();
+    if (window.__PD_SRC) { src = {status: 'ok', data: window.__PD_SRC}; render(); return; }
+    fetch('data.json', {cache: 'no-store'}).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((j) => { src = {status: 'ok', data: j}; render(); })
+      .catch((e) => { src = {status: 'error', data: null, message: String(e)}; render(); });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
+})();
+</script>
 </head>
 <body>
 <div id="dash-root">
@@ -34,254 +117,1148 @@
   /* Тёмная страница в одном стиле с дашбордами WeatherNext и ECMWF: одинаково при любой теме приложения. */
   #dash-root { --dash-gutter: 0; }
   .pd {
-    --color-fg: #f0efec; --color-fg-muted: #9aa3ad; --color-bg: #0b1219; --color-panel: #15202b; --color-border-line: #2a3644;
-    --color-ok: #2fbf71; --cds-text-secondary: #9aa3ad; --cds-chart-grid: #1f2b38; --cds-chart-axis: #4a5868; --cds-chart-reference: #56677a;
-    --cds-surface-popover: #1b2835; --cds-border: #33414f; --cds-shadow-popover: 0 4px 14px rgba(0, 0, 0, .5);
-    --c-bar: #2f7fe8; --c-int: #81cffe; --c-cum: #edddb6; --c-band: rgba(129, 207, 254, .10); --c-haz: #ff8a5c;
+    --color-fg: #eef1f4; --color-fg-muted: #a7b1bc; --color-fg-faint: #8794a1; --color-bg: #0b1219; --color-panel: #131d28; --color-panel-2: #182533; --color-border-line: #263343;
+    --cds-text-secondary: #a7b1bc; --cds-chart-grid: #1e2a37; --cds-chart-axis: #455467; --cds-chart-reference: #8fa3b8;
+    --cds-surface-popover: #1b2835; --cds-border: #33414f; --cds-shadow-popover: 0 6px 18px rgba(0, 0, 0, .55);
+    --c-accent: #81cffe; --c-bar: #2f7fe8; --c-int: #81cffe; --c-cum: #edddb6; --c-band: rgba(129, 207, 254, .13); --c-haz: #ff8a5c; --color-ok: #4fd18b;
     color-scheme: dark; background: var(--color-bg); color: var(--color-fg);
-    padding-block: var(--cds-pad-lg); padding-left: max(16px, var(--cds-pad-lg)); padding-right: max(16px, var(--cds-pad-lg));
-    display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+    display: flex; flex-direction: column; gap: 28px; padding-bottom: 28px;
+    font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+  .pd [hidden] { display: none !important; }
   .pd:not(.pd-en) [data-l="en"] { display: none !important; }
   .pd.pd-en [data-l="ru"] { display: none !important; }
-  .pd .dash-select { background-color: var(--color-panel); color: var(--color-fg); border-color: var(--color-border-line);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d6dee6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 12px 8px; max-width: 100%; }
-  .pd-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
-  .pd-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--cds-gap-md); }
-  .pd-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
-  .pd-lead { font-size: var(--cds-font-size-heading); line-height: 1.45; margin: 0; max-width: 70ch; }
-  .pd-lead b { font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
-  .pd-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; line-height: 1.6; }
-  .pd-lang, .pd-seg { display: inline-flex; flex-shrink: 0; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; }
-  .pd-lang button, .pd-seg button { font: inherit; font-size: var(--cds-font-size-caption); padding: 4px 13px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
-  .pd-lang button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); font-weight: var(--cds-font-weight-medium); }
-  .pd-seg button[aria-pressed="true"] { background: #81cffe; color: #0b1219; font-weight: var(--cds-font-weight-medium); }
-  .pd button:focus-visible, .pd-dc:focus-visible { outline: 2px solid #81cffe; outline-offset: 2px; }
-  .pd-row { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
-  .pd-lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .pd-pill-stale { font-size: var(--cds-font-size-caption); border-radius: 999px; padding: 2px 10px; color: #1a1406; background: #e0c050; font-weight: var(--cds-font-weight-medium); }
-  .pd-sec { display: flex; flex-direction: column; gap: var(--cds-gap-md); min-width: 0; }
+  .pd-wrap { padding-left: max(16px, var(--cds-pad-lg)); padding-right: max(16px, var(--cds-pad-lg)); }
+  .pd .dash-select { background-color: var(--color-panel); color: var(--color-fg); border-color: var(--color-border-line); max-width: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d6dee6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 12px 8px; }
+  .pd .dash-select:hover { border-color: #4a5e72; }
+  .pd button:focus-visible, .pd .dash-select:focus-visible, .pd summary:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+
+  /* Верхняя панель: пункт с суммой, период, последний кадр, язык */
+  .pd-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding-top: 12px; padding-bottom: 12px; background: rgba(11, 18, 25, .92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--color-border-line); }
+  .pd-brand { font-weight: var(--cds-font-weight-medium); letter-spacing: .02em; white-space: nowrap; }
+  .pd-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+  .pd-seg button { font: inherit; font-size: var(--cds-font-size-caption); padding: 6px 13px; background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .pd-seg button:hover { color: var(--color-fg); }
+  .pd-seg button[aria-pressed="true"] { background: var(--c-accent); color: #0b1219; font-weight: var(--cds-font-weight-medium); }
+  .pd-seg button:focus-visible { outline-offset: -2px; }
+  .pd:not(.pd-en) .pd-ptot::after { content: " мм"; } .pd.pd-en .pd-ptot::after { content: " mm"; }
+  .pd-ptot { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; background: rgba(129, 207, 254, .14); color: var(--color-fg); font-weight: 400; }
+  .pd-seg button[aria-pressed="true"] .pd-ptot { background: rgba(11, 18, 25, .16); color: #0b1219; }
+  .pd-bar-r { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+  .pd-bar .dash-select { font-size: var(--cds-font-size-caption); min-width: 0; }
+  .pd-frame { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .pd-frame b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .pd-badge { font-size: 11px; font-weight: var(--cds-font-weight-medium); border-radius: 999px; padding: 2px 8px; white-space: nowrap; cursor: help; color: #1a1406; background: #e0c050; }
+
+  /* Главный блок: итоги периода */
+  .pd-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 22px 40px; align-items: start; }
+  @media (max-width: 900px) { .pd-hero { grid-template-columns: minmax(0, 1fr); } }
+  .pd-kicker { margin: 0 0 6px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .08em; }
+  .pd-title { font-weight: var(--cds-font-weight-medium); font-size: clamp(26px, 4vw, 36px); line-height: 1.1; margin: 0; letter-spacing: -.01em; }
+  .pd-lead { font-size: var(--cds-font-size-heading); line-height: 1.45; margin: 10px 0 0; max-width: 46ch; color: var(--color-fg-muted); }
+  .pd-lead b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .pd-lead button { all: unset; cursor: pointer; color: var(--color-fg); font-weight: var(--cds-font-weight-medium); border-bottom: 1px dashed var(--c-accent); white-space: nowrap; }
+  .pd-lead button:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .pd-total { margin-top: 18px; padding: 16px 18px 12px; border-radius: 14px; border: 1px solid var(--color-border-line);
+    background: linear-gradient(180deg, #1a2939 0%, #131d28 100%); box-shadow: 0 10px 24px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05); max-width: 460px; }
+  .pd-total-k { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-total-v { font-size: clamp(40px, 6vw, 56px); line-height: 1.05; font-weight: var(--cds-font-weight-medium); letter-spacing: -.02em; margin-top: 2px; white-space: nowrap; }
+  .pd-total-v .u { font-size: .36em; color: var(--color-fg-muted); font-weight: 400; margin-left: 6px; letter-spacing: 0; }
+  .pd-total-p { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: 2px; }
+  .pd-spark { position: relative; height: 56px; margin-top: 8px; }
+  .pd-spark svg { display: block; overflow: visible; }
+  .pd-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 520px) { .pd-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .pd-stat { padding: 12px 14px; border-radius: 12px; background: var(--color-panel); border: 1px solid var(--color-border-line); min-width: 0; }
+  .pd-stat-k { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-stat-v { font-size: 20px; font-weight: var(--cds-font-weight-medium); white-space: nowrap; margin-top: 2px; }
+  .pd-stat-v .u { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-weight: 400; margin-left: 3px; }
+  .pd-stat-s { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: 2px; min-height: 1.4em; }
+  .pd-stat-wide { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .pd-stat-wide .pd-stat-v { font-size: 17px; }
+
+  /* Строка интенсивных осадков */
+  .pd-alerts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 14px; border-radius: 10px; background: var(--color-panel); border: 1px solid var(--color-border-line); }
+  .pd-alerts-ok { color: var(--color-ok); font-size: var(--cds-font-size-body); display: inline-flex; align-items: center; gap: 8px; }
+  .pd-alerts-ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); }
+  .pd-alerts-t { font-size: var(--cds-font-size-body); color: var(--c-haz); font-weight: var(--cds-font-weight-medium); }
+  .pd-alerts-note { margin-left: auto; font-size: var(--cds-font-size-caption); color: var(--color-fg-faint); }
+  .pd-hz { display: contents; }
+  .pd-hz-pill { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--cds-font-size-caption); color: #1a0d06; background: var(--c-haz); border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .pd-hz-pill b { font-weight: 600; }
+  .pd-hz-more { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+
+  /* Заголовки, карточки, графики */
   .pd-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
-  .pd-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
-  .pd-sub { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin: 0; max-width: 75ch; line-height: 1.5; }
-  /* Итоги */
-  .pd-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--cds-gap-md); }
-  .pd-kpi { padding: var(--cds-pad-md) var(--cds-pad-lg); display: flex; flex-direction: column; gap: 4px; min-width: 0;
-    background: linear-gradient(180deg, #1f3042 0%, #131e28 100%); border: 1px solid #2f4052; border-radius: calc(var(--cds-radius) + 4px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 10px 22px -10px rgba(0, 0, 0, .8), 0 2px 4px rgba(0, 0, 0, .35); }
-  .pd-kpi:hover { border-color: #4a5e72; }
-  @media (prefers-reduced-motion: no-preference) { .pd-kpi { transition: transform var(--cds-dur-slow) var(--cds-ease-out); } .pd-kpi:hover { transform: translateY(-2px); } }
-  .pd-kpi-l { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .pd-kpi-v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.1; }
-  .pd-kpi-u { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin-left: 4px; font-family: var(--font-anthropic-sans); }
-  .pd-kpi-n { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  /* Интенсивные осадки */
-  .pd-hz { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
-  .pd-hz-pill { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--cds-font-size-body); color: #1a0d06; background: var(--c-haz); border: 0; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
-  .pd-hz-none { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-ok); }
-  /* Карточки суток */
-  .pd-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
-  .pd-dc { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 8px 10px;
-    background: linear-gradient(180deg, #1c2b3a 0%, #131e28 100%); border: 1px solid #2c3b4b; border-radius: calc(var(--cds-radius) + 2px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 6px 14px -8px rgba(0, 0, 0, .7); }
-  .pd-dc:hover { border-color: #4a5e72; }
-  .pd-dc.dry { opacity: .5; }
-  .pd-dc[aria-pressed="true"] { opacity: 1; border-color: #81cffe; background: linear-gradient(180deg, #223a50 0%, #172a3a 100%); box-shadow: inset 0 0 0 1px #81cffe; }
-  @media (prefers-reduced-motion: no-preference) { .pd-dc { transition: transform var(--cds-dur-slow) var(--cds-ease-out); } .pd-dc:hover { transform: translateY(-2px); } }
-  .pd-dc-h { display: flex; justify-content: space-between; align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .pd-dc-v { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); white-space: nowrap; }
-  .pd-dc-x { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; }
-  .pd-bell { color: var(--c-haz); display: inline-flex; }
-  /* Графики */
-  .pd-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
-  .pd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--cds-gap-md); }
-  .pd-chart { position: relative; min-height: 190px; width: 100%; }
-  .pd-chart-s { min-height: 150px; }
+  .pd-sec { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .pd-sec-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+  .pd-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .pd-card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+  .pd-period { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+  @media (min-width: 1000px) { .pd-period { grid-template-columns: minmax(0, 470px) minmax(0, 1fr); } }
+  .pd-chartbox { position: relative; }
+  .pd-plabel { position: absolute; left: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); pointer-events: none; z-index: 1; line-height: 16px; }
+  .pd-chart { position: relative; width: 100%; min-height: 160px; }
   .pd-chart svg { display: block; overflow: visible; }
-  .pd-chart .tick text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .pd-chart .tick text, .pd-spark text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .pd-chart .tick line { stroke: var(--cds-chart-grid); }
   .pd-chart .domain { stroke: var(--cds-chart-axis); }
-  .pd-keys { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-  .pd-key { display: inline-flex; align-items: center; gap: 6px; }
-  .pd-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
-  .pd-sw-box { height: 10px; width: 10px; }
-  .pd-sw-haz { background: none; border-top: 2px dashed var(--c-haz); height: 0; }
-  .pd-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 6px; padding: 6px 9px; font-size: var(--cds-font-size-caption); color: var(--color-fg); white-space: nowrap; z-index: 3; }
+  .pd-vl { fill: var(--color-fg); font-size: 11.5px; font-weight: 600; font-family: var(--font-anthropic-sans); paint-order: stroke; stroke: var(--color-panel); stroke-width: 3px; }
+  .pd-vl-end { fill: var(--c-cum); font-size: var(--cds-font-size-caption); }
+  .pd-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 8px; padding: 8px 10px; font-size: var(--cds-font-size-caption); color: var(--color-fg); white-space: nowrap; z-index: 3; line-height: 1.55; }
+  .pd-tip b { font-weight: var(--cds-font-weight-medium); }
   .pd-tip .m { color: var(--cds-text-secondary); }
-  .pd-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-md) 0; }
-  .pd-daystats { display: flex; flex-wrap: wrap; gap: 6px var(--cds-gap-lg); font-size: var(--cds-font-size-body); }
-  .pd-daystats b { font-weight: var(--cds-font-weight-medium); }
-  .pd-part { font-size: var(--cds-font-size-caption); color: #e0c050; }
-  /* Таблицы */
-  .pd-tw { overflow-x: auto; }
-  .pd-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
-  .pd-table th, .pd-table td { padding: 5px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .pd-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 16px 0; }
+  .pd-keys { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); align-items: center; }
+  .pd-key { display: inline-flex; align-items: center; gap: 6px; }
+  .pd-sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+  .pd-sw-line { width: 14px; height: 3px; }
+  .pd-sw-dash { width: 14px; height: 0; border-top: 2px dashed var(--c-haz); border-radius: 0; }
+  .pd-sw-bar { background: var(--c-bar); } .pd-sw-haz { background: var(--c-haz); } .pd-sw-cum { background: var(--c-cum); } .pd-sw-int { background: var(--c-int); }
+  .pd-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-faint); margin: 0; line-height: 1.5; }
+
+  /* Календарь осадков */
+  .pd-scale { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .pd-scale-bins { display: inline-flex; align-items: center; gap: 2px; }
+  .pd-scale-bins i { width: 22px; height: 10px; display: inline-block; }
+  .pd-scale-bins i:first-child { border-radius: 3px 0 0 3px; } .pd-scale-bins i:last-child { border-radius: 0 3px 3px 0; }
+  .pd-b1 { background: #16324d; } .pd-b2 { background: #1c4a75; } .pd-b3 { background: #22649f; } .pd-b4 { background: #2f7fe8; } .pd-b5 { background: #5aa9f0; } .pd-b6 { background: #9fd6ff; }
+  .pd-cal-head, .pd-cal-w { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .pd-cal-head { font-size: 11px; color: var(--color-fg-faint); text-align: center; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .pd-cal { display: flex; flex-direction: column; gap: 4px; }
+  .pd-cell { all: unset; box-sizing: border-box; position: relative; height: 52px; border-radius: 8px; background: #0f1822; border: 1px solid transparent; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 4px 6px; min-width: 0; color: var(--color-fg); }
+  .pd-cell:hover { border-color: #4a5e72; }
+  .pd-cell:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+  .pd-cell.out { background: transparent; cursor: default; }
+  .pd-cell.part { border: 1px dashed #5b6f85; }
+  .pd-cell[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--c-accent); border-color: transparent; }
+  .pd-cell .d { font-size: 11px; color: var(--color-fg-muted); white-space: nowrap; overflow: hidden; }
+  .pd-cell .d.m1 { color: var(--color-fg); font-weight: 600; }
+  .pd-cell .v { font-size: 13px; font-weight: var(--cds-font-weight-medium); text-align: right; white-space: nowrap; }
+  .pd-cell .v.dry { color: var(--color-fg-faint); font-weight: 400; }
+  .pd-cell.lt .d, .pd-cell.lt .v { color: #0b1219; }
+  .pd-cell .bell { position: absolute; top: 4px; right: 5px; color: var(--c-haz); display: inline-flex; }
+  .pd-cell.lt .bell { color: #8a2c08; }
+
+  /* Выбранные сутки */
+  .pd-dayhero { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 18px 40px; align-items: end; }
+  @media (max-width: 900px) { .pd-dayhero { grid-template-columns: minmax(0, 1fr); } }
+  .pd-daynav { display: flex; align-items: center; gap: 8px; }
+  .pd-dayname { font-size: var(--cds-font-size-heading); min-width: 12em; text-align: center; }
+  .pd-nav { font: inherit; width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--color-border-line); background: transparent; color: var(--color-fg); cursor: pointer; display: inline-grid; place-items: center; padding: 0; }
+  .pd-nav:hover:not(:disabled) { border-color: #4a5e72; background: var(--color-panel-2); }
+  .pd-nav:disabled { color: #3e4c5a; border-color: #1e2a37; cursor: default; }
+  .pd-nav svg { width: 14px; height: 14px; }
+  .pd-daysum { font-size: clamp(40px, 6vw, 56px); line-height: 1.05; font-weight: var(--cds-font-weight-medium); letter-spacing: -.02em; margin-top: 10px; white-space: nowrap; }
+  .pd-daysum .u { font-size: .36em; color: var(--color-fg-muted); font-weight: 400; margin-left: 6px; letter-spacing: 0; }
+  .pd-daysub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 4px 0 0; }
+  .pd-daysub .warn { color: #e0c050; }
+  .pd-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 520px) { .pd-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .pd-empty { display: flex; align-items: center; gap: 12px; padding: 28px 18px; border-radius: 12px; border: 1px dashed var(--color-border-line); color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
+  .pd-empty b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+
+  /* Таблицы и свёрнутые разделы */
+  .pd-tw { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .pd-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--cds-font-size-caption); }
+  .pd-table thead th { position: sticky; top: 0; z-index: 2; background: var(--color-panel); }
+  .pd-table th:first-child, .pd-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--color-panel); box-shadow: inset -1px 0 0 var(--color-border-line); }
+  .pd-table thead th:first-child { z-index: 3; }
+  .pd-table th, .pd-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
   .pd-table th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
   .pd-table .l { text-align: left; }
   .pd-table tr.sel td { background: #182838; }
   .pd-table tr.hit td { color: var(--c-haz); }
-  .pd-fold { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); }
-  .pd-fold > summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); padding: 4px 0; }
-  .pd-fold[open] > summary { margin-bottom: var(--cds-gap-sm); }
-  .pd-notes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; color: var(--color-fg-muted); line-height: 1.5; max-width: 85ch; }
-  .pd-foot { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
-  .pd-foot p { margin: 0; max-width: 95ch; }
-  .pd-foot a { color: #81cffe; text-decoration: underline; text-underline-offset: 2px; }
-  @media (max-width: 520px) { .pd-top { flex-direction: column-reverse; align-items: flex-end; } .pd-title { align-self: stretch; } }
+  .pd-table td.dry { color: var(--color-fg-faint); }
+  .pd-folds { display: flex; flex-direction: column; gap: 8px; }
+  .pd-fold { border: 1px solid var(--color-border-line); border-radius: 12px; padding: 6px 14px; background: var(--color-panel); }
+  .pd-fold > summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); padding: 6px 0; font-size: var(--cds-font-size-body); }
+  .pd-fold[open] > summary { margin-bottom: 8px; }
+  .pd-fold[open] { padding-bottom: 12px; }
+  .pd-method { display: flex; flex-direction: column; gap: 14px; }
+  .pd-facts { margin: 0 0 14px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; font-size: var(--cds-font-size-body); }
+  .pd-facts dt { color: var(--color-fg-muted); }
+  .pd-facts dd { margin: 0; }
+  .pd-notes { margin: 0; padding-left: 1.2em; color: var(--color-fg-muted); line-height: 1.5; font-size: var(--cds-font-size-body); columns: 2 360px; column-gap: 40px; }
+  .pd-notes li { break-inside: avoid; margin-bottom: 8px; }
+  .pd-foot { border-top: 1px solid var(--color-border-line); padding-top: 16px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
+  .pd-foot p { margin: 0 0 6px; max-width: 100ch; }
+  .pd-foot a, .pd-notes a { color: var(--c-accent); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Телефон: панель не закреплена, кнопки не меньше 40 px */
+  @media (max-width: 640px) {
+    .pd-bar { position: static; }
+    .pd-bar-r { margin-left: 0; width: 100%; }
+    .pd-bar .dash-select { flex: 1 1 100%; }
+    .pd-seg button { min-height: 40px; padding: 8px 14px; }
+    .pd-bar .dash-select, .pd-card-h .pd-seg button { min-height: 40px; }
+    .pd-nav { width: 40px; height: 40px; }
+    .pd-hz-pill { min-height: 40px; }
+    .pd-dayname { min-width: 0; flex: 1; }
+    .pd-alerts-note { margin-left: 0; }
+    .pd-cell { height: 46px; padding: 3px 4px; }
+    .pd-cell .v { font-size: 12px; }
+    .pd-fold > summary { min-height: 40px; display: flex; align-items: center; }
+  }
 </style>
 
 <div class="pd" lang="ru">
-  <header class="pd-head" id="top">
-    <div class="pd-top">
-      <h1 class="pd-title"><span data-l="ru">Осадки PARDIG: <span data-draw="place-ru" data-source="places" data-field="place_ru">—</span></span><span data-l="en" lang="en">PARDIG precipitation: <span data-draw="place-en" data-source="places" data-field="place_en">—</span></span></h1>
-      <div class="pd-lang" role="group" aria-label="Язык / Language">
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <symbol id="pd-chev-l" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="pd-chev-r" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="pd-sun" viewBox="0 0 24 24"><path d="M12 2.4v2.4M12 19.2v2.4M2.4 12h2.4M19.2 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M5.2 18.8l1.7-1.7M17.1 6.9l1.7-1.7" stroke="#f2c14e" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.6" fill="#f2c14e"/></symbol>
+    <symbol id="pd-bell" viewBox="0 0 24 24"><path d="M12 2a6 6 0 0 0-6 6v4.5L4 16v1h16v-1l-2-3.5V8a6 6 0 0 0-6-6zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+  <header class="pd-bar pd-wrap" id="top">
+    <span class="pd-brand"><span data-l="ru">Осадки PARDIG</span><span data-l="en" lang="en">PARDIG precipitation</span></span>
+    <span class="pd-seg" role="group" aria-label="Пункт / Place">
+      <button type="button" data-place-btn="Tashkent" aria-pressed="true"><span data-l="ru">Ташкент</span><span data-l="en" lang="en">Tashkent</span><span class="pd-ptot" data-draw="ptot-t" data-source="place_tot" data-field="total_mm" data-where="place=Tashkent">—</span></button>
+      <button type="button" data-place-btn="Chimgan" aria-pressed="false"><span data-l="ru">Чимган</span><span data-l="en" lang="en">Chimgan</span><span class="pd-ptot" data-draw="ptot-c" data-source="place_tot" data-field="total_mm" data-where="place=Chimgan">—</span></button>
+    </span>
+    <div class="pd-bar-r">
+      <select class="dash-select" id="per-select" data-draw="per-select" data-source="periods" aria-label="Период / Period"></select>
+      <span class="pd-frame"><span data-l="ru">последний кадр</span><span data-l="en" lang="en">latest frame</span> <b data-draw="last-frame">—</b>
+        <span class="pd-badge" data-pill="stale" hidden><span data-l="ru" title="Данные устарели: таблицу обновляли больше суток назад. Запустите блокнот.">устарели</span><span data-l="en" lang="en" title="Data are out of date: the table was updated over a day ago. Run the notebook.">out of date</span></span></span>
+      <span class="pd-seg" role="group" aria-label="Язык / Language">
         <button type="button" data-lang-btn="ru" aria-pressed="true" lang="ru">RU</button>
         <button type="button" data-lang-btn="en" aria-pressed="false" lang="en">EN</button>
-      </div>
-    </div>
-    <p class="pd-lead" data-l="ru" data-read lang="ru">С <b data-draw="p-first" data-source="ptot" data-field="first_day" data-row="0">—</b> по <b data-draw="p-last" data-source="ptot" data-field="last_day" data-row="0">—</b> выпало <b data-draw="p-sum" data-source="ptot" data-field="total_mm" data-row="0">—</b> мм осадков, дней с осадками — <b data-draw="p-wet" data-source="ptot" data-field="wet_days" data-row="0">—</b>. Наибольшая мгновенная интенсивность — <b data-draw="p-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</b> мм/ч (<span data-draw="p-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span>).</p>
-    <p class="pd-lead" data-l="en" data-read lang="en">From <b data-draw="p-first" data-source="ptot" data-field="first_day" data-row="0">—</b> to <b data-draw="p-last" data-source="ptot" data-field="last_day" data-row="0">—</b>, <b data-draw="p-sum" data-source="ptot" data-field="total_mm" data-row="0">—</b> mm of precipitation fell on <b data-draw="p-wet" data-source="ptot" data-field="wet_days" data-row="0">—</b> wet days. The highest instantaneous rate was <b data-draw="p-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</b> mm/h (<span data-draw="p-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span>).</p>
-    <div class="pd-row">
-      <span class="pd-lbl"><span data-l="ru">Пункт</span><span data-l="en" lang="en">Place</span></span>
-      <span class="pd-seg" role="group" aria-label="Пункт / Place" data-draw="place-btns" data-source="places"></span>
-    </div>
-    <div class="pd-row">
-      <label class="pd-lbl" for="per-select"><span data-l="ru">Период</span><span data-l="en" lang="en">Period</span></label>
-      <select class="dash-select" id="per-select" data-draw="per-select" data-source="daily" aria-label="Период / Period"></select>
-      <span class="pd-pill-stale" data-pill="stale" hidden><span data-l="ru">Данные не обновлялись больше суток: запустите блокнот</span><span data-l="en" lang="en">Data not updated for over a day: run the notebook</span></span>
-    </div>
-    <p class="pd-meta" data-l="ru">Точка <span data-draw="lat" data-source="places" data-field="lat">—</span>° с. ш., <span data-draw="lon" data-source="places" data-field="lon">—</span>° в. д., высота <span data-draw="elev" data-source="places" data-field="elev_m">—</span> м · узел сетки 0.1°: <span data-draw="nlat" data-source="places" data-field="node_lat">—</span>° с. ш., <span data-draw="nlon" data-source="places" data-field="node_lon">—</span>° в. д. · последний кадр <span data-draw="last-frame" data-source="places" data-field="last_frame_local">—</span> · данные обновлены <span data-draw="updated" data-source="info" data-field="value" data-where="key=updated_local">—</span> · время — ташкентское (UTC+5)</p>
-    <p class="pd-meta" data-l="en" lang="en">Point <span data-draw="lat" data-source="places" data-field="lat">—</span>° N, <span data-draw="lon" data-source="places" data-field="lon">—</span>° E, elevation <span data-draw="elev" data-source="places" data-field="elev_m">—</span> m · 0.1° grid node: <span data-draw="nlat" data-source="places" data-field="node_lat">—</span>° N, <span data-draw="nlon" data-source="places" data-field="node_lon">—</span>° E · last frame <span data-draw="last-frame" data-source="places" data-field="last_frame_local">—</span> · data updated <span data-draw="updated" data-source="info" data-field="value" data-where="key=updated_local">—</span> · Tashkent time (UTC+5)</p>
-  </header>
-
-  <section class="pd-sec" id="totals">
-    <div class="pd-kpis" data-fetchpriority="high">
-      <div class="pd-kpi" id="kpi-sum"><span class="pd-kpi-l"><span data-l="ru">Сумма за период</span><span data-l="en" lang="en">Period total</span></span>
-        <span class="pd-kpi-v"><span data-draw="k-sum" data-source="ptot" data-field="total_mm" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></span>
-        <span class="pd-kpi-n"><span data-l="ru">суток в периоде: </span><span data-l="en" lang="en">days in period: </span><span data-draw="k-days" data-source="ptot" data-field="days" data-row="0">—</span></span></div>
-      <div class="pd-kpi" id="kpi-wet"><span class="pd-kpi-l"><span data-l="ru">Дней с осадками ≥ 0.1 мм</span><span data-l="en" lang="en">Days with ≥ 0.1 mm</span></span>
-        <span class="pd-kpi-v"><span data-draw="k-wet" data-source="ptot" data-field="wet_days" data-row="0">—</span></span>
-        <span class="pd-kpi-n"><span data-l="ru">часов с осадками: </span><span data-l="en" lang="en">wet hours: </span><span data-draw="k-weth" data-source="ptot" data-field="wet_hours" data-row="0">—</span></span></div>
-      <div class="pd-kpi" id="kpi-day"><span class="pd-kpi-l"><span data-l="ru">Наибольшая за сутки</span><span data-l="en" lang="en">Wettest day</span></span>
-        <span class="pd-kpi-v"><span data-draw="k-maxday" data-source="ptot" data-field="max_day_mm" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></span>
-        <span class="pd-kpi-n" data-draw="k-maxday-at" data-source="ptot" data-field="max_day_date" data-row="0">—</span></div>
-      <div class="pd-kpi" id="kpi-1h"><span class="pd-kpi-l"><span data-l="ru">Наибольшая за час</span><span data-l="en" lang="en">Wettest hour</span></span>
-        <span class="pd-kpi-v"><span data-draw="k-max1h" data-source="ptot" data-field="max_1h_mm" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></span>
-        <span class="pd-kpi-n" data-draw="k-max1h-at" data-source="ptot" data-field="max_1h_end" data-row="0">—</span></div>
-      <div class="pd-kpi" id="kpi-int"><span class="pd-kpi-l"><span data-l="ru">Наибольшая мгновенная интенсивность</span><span data-l="en" lang="en">Peak instantaneous rate</span></span>
-        <span class="pd-kpi-v"><span data-draw="k-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</span><span class="pd-kpi-u"><span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span></span>
-        <span class="pd-kpi-n" data-draw="k-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span></div>
-    </div>
-  </section>
-
-  <section class="pd-sec" id="intense">
-    <h2 class="pd-h2"><span data-l="ru">Интенсивные осадки</span><span data-l="en" lang="en">Intense precipitation</span></h2>
-    <p class="pd-sub"><span data-l="ru">Отмечаются сутки, когда сумма за 12 часов подряд достигла <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> мм или мгновенная интенсивность — <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> мм/ч. Фазу осадков PARDIG не даёт, поэтому порог один для дождя и снега. Нажмите на отметку, чтобы открыть эти сутки.</span><span data-l="en" lang="en">Days are marked when 12 consecutive hours reached <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> mm or the instantaneous rate reached <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> mm/h. PARDIG gives no precipitation phase, so one threshold applies to rain and snow. Click a mark to open that day.</span></p>
-    <p class="pd-hz-none" data-hz="none" hidden><span data-l="ru">За выбранный период интенсивных осадков не было.</span><span data-l="en" lang="en">No intense precipitation in the selected period.</span></p>
-    <div class="pd-hz" data-draw="hz-list" data-source="dsel"></div>
-  </section>
-
-  <section class="pd-sec" id="days">
-    <h2 class="pd-h2"><span data-l="ru">По суткам</span><span data-l="en" lang="en">Day by day</span></h2>
-    <p class="pd-sub"><span data-l="ru">Сумма за сутки по ташкентскому времени и наибольшая мгновенная интенсивность (↑). Бледные карточки — сутки без осадков, колокольчик — интенсивные осадки. Нажмите на сутки, чтобы увидеть их подробно.</span><span data-l="en" lang="en">Daily total (Tashkent calendar day) and peak instantaneous rate (↑). Faded cards are dry days, a bell marks intense precipitation. Click a day to see it in detail.</span></p>
-    <div class="pd-days" data-draw="days" data-source="dsel"></div>
-    <div class="pd-card" id="period-charts">
-      <h3 class="pd-h3"><span data-l="ru">Осадки за сутки, мм</span><span data-l="en" lang="en">Daily precipitation, mm</span></h3>
-      <div class="pd-chart pd-chart-s" data-draw="ch-daily" data-source="dsel"></div>
-      <h3 class="pd-h3"><span data-l="ru">Сумма с начала периода, мм</span><span data-l="en" lang="en">Cumulative total since the start of the period, mm</span></h3>
-      <div class="pd-chart pd-chart-s" data-draw="ch-cum" data-source="dsel"></div>
-    </div>
-  </section>
-
-  <section class="pd-sec" id="day">
-    <h2 class="pd-h2"><span data-l="ru">Выбранные сутки:</span><span data-l="en" lang="en">Selected day:</span> <span data-draw="day-name">—</span></h2>
-    <div class="pd-daystats">
-      <span><span data-l="ru">Сумма </span><span data-l="en" lang="en">Total </span><b data-draw="d-sum" data-source="dsel" data-field="sum_mm">—</b> <span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span>
-      <span><span data-l="ru">наибольшая за час </span><span data-l="en" lang="en">wettest hour </span><b data-draw="d-1h" data-source="dsel" data-field="max_1h_mm">—</b> <span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span>
-      <span><span data-l="ru">мгновенная интенсивность до </span><span data-l="en" lang="en">instantaneous rate up to </span><b data-draw="d-int" data-source="dsel" data-field="max_int_mmh">—</b> <span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span>
-      <span><span data-l="ru">наибольшая за 12 ч </span><span data-l="en" lang="en">wettest 12 h </span><b data-draw="d-12h" data-source="dsel" data-field="max_12h_mm">—</b> <span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span>
-      <span class="pd-part" data-draw="d-part" data-source="dsel" data-field="n">—</span>
-    </div>
-    <div class="pd-row">
-      <span class="pd-lbl"><span data-l="ru">Шаг сумм</span><span data-l="en" lang="en">Totals step</span></span>
-      <span class="pd-seg" role="group" aria-label="Шаг / Step">
-        <button type="button" data-step-btn="15" aria-pressed="false"><span data-l="ru">15 мин</span><span data-l="en" lang="en">15 min</span></button>
-        <button type="button" data-step-btn="30" aria-pressed="false"><span data-l="ru">30 мин</span><span data-l="en" lang="en">30 min</span></button>
-        <button type="button" data-step-btn="60" aria-pressed="true"><span data-l="ru">1 час</span><span data-l="en" lang="en">1 hour</span></button>
       </span>
     </div>
-    <div class="pd-grid">
-      <div class="pd-card" id="day-sum"><h3 class="pd-h3"><span data-step-title="15" hidden><span data-l="ru">Осадки за каждые 15 минут, мм</span><span data-l="en" lang="en">Precipitation for each 15 minutes, mm</span></span><span data-step-title="30" hidden><span data-l="ru">Осадки за каждые 30 минут, мм</span><span data-l="en" lang="en">Precipitation for each 30 minutes, mm</span></span><span data-step-title="60"><span data-l="ru">Осадки за каждый час, мм</span><span data-l="en" lang="en">Hourly precipitation, mm</span></span></h3>
-        <p class="pd-sub" style="font-size: var(--cds-font-size-caption)"><span data-l="ru">Столбец подписан временем окончания интервала: например, «13:00» при шаге 1 час — осадки с 12:00 до 13:00.</span><span data-l="en" lang="en">Each bar is labelled by the end of its interval: with a 1-hour step, “13:00” means precipitation from 12:00 to 13:00.</span></p>
-        <div class="pd-chart" data-draw="ch-day-sum" data-source="dagg"></div></div>
-      <div class="pd-card" id="day-int"><h3 class="pd-h3"><span data-l="ru">Мгновенная интенсивность осадков, мм/ч</span><span data-l="en" lang="en">Instantaneous precipitation rate, mm/h</span></h3>
-        <p class="pd-sub" style="font-size: var(--cds-font-size-caption)"><span data-l="ru">Скорость выпадения осадков в момент кадра (каждые 15 минут), а не сумма за 15 минут. Слой за 15 минут ≈ мгновенная интенсивность × 0.25 ч.</span><span data-l="en" lang="en">The precipitation rate at the moment of each frame (every 15 minutes), not a 15-minute total. The 15-minute depth ≈ instantaneous rate × 0.25 h.</span></p>
-        <div class="pd-chart" data-draw="ch-day-int" data-source="dframes"></div>
-        <div class="pd-keys"><span class="pd-key"><span class="pd-sw" style="background: var(--c-int)"></span><span data-l="ru">мгновенная интенсивность</span><span data-l="en" lang="en">instantaneous rate</span></span><span class="pd-key"><span class="pd-sw pd-sw-haz"></span><span data-l="ru">порог интенсивных осадков (если в пределах графика)</span><span data-l="en" lang="en">intense-precipitation threshold (when within the chart)</span></span></div></div>
+  </header>
+
+  <section class="pd-wrap pd-hero" id="summary">
+    <div>
+      <p class="pd-kicker"><span data-l="ru">Итоги периода</span><span data-l="en" lang="en">Period summary</span></p>
+      <h1 class="pd-title" data-draw="place-name">—</h1>
+      <p class="pd-lead" data-lead="wet" data-l="ru" data-read lang="ru">Главное событие периода — <button type="button" data-pick="max-day"><span data-draw="lead-date" data-source="ptot" data-field="max_day_date" data-row="0">—</span></button>: <b><span data-draw="lead-mm" data-source="ptot" data-field="max_day_mm" data-row="0">—</span> мм</b>, это <b><span data-draw="lead-share" data-source="ptot" data-field="max_day_share_pct" data-row="0">—</span> %</b> суммы за период.</p>
+      <p class="pd-lead" data-lead="wet" data-l="en" data-read lang="en">The main event of the period was <button type="button" data-pick="max-day"><span data-draw="lead-date" data-source="ptot" data-field="max_day_date" data-row="0">—</span></button>: <b><span data-draw="lead-mm" data-source="ptot" data-field="max_day_mm" data-row="0">—</span> mm</b>, <b><span data-draw="lead-share" data-source="ptot" data-field="max_day_share_pct" data-row="0">—</span> %</b> of the period total.</p>
+      <p class="pd-lead" data-lead="dry" data-l="ru" data-read lang="ru" hidden>За выбранный период осадков не было.</p>
+      <p class="pd-lead" data-lead="dry" data-l="en" data-read lang="en" hidden>There was no precipitation in the selected period.</p>
+      <div class="pd-total" id="total">
+        <div class="pd-total-k"><span data-l="ru">Сумма за период</span><span data-l="en" lang="en">Period total</span></div>
+        <div class="pd-total-v"><span data-draw="k-sum" data-source="ptot" data-field="total_mm" data-row="0">—</span><span class="u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></div>
+        <div class="pd-total-p"><span data-draw="k-from" data-source="ptot" data-field="first_day" data-row="0">—</span>–<span data-draw="k-to" data-source="ptot" data-field="last_day" data-row="0">—</span> · <span data-draw="k-days" data-source="ptot" data-field="days" data-row="0">—</span> <span data-l="ru">сут.</span><span data-l="en" lang="en">days</span></div>
+        <div class="pd-spark" data-draw="spark" data-source="pcum" role="img" aria-label="Нарастающая сумма осадков за период / Cumulative precipitation"></div>
+      </div>
+    </div>
+    <div class="pd-stats" id="stats">
+      <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Сутки с осадками</span><span data-l="en" lang="en">Wet days</span></div>
+        <div class="pd-stat-v"><span data-draw="k-wet" data-source="ptot" data-field="wet_days" data-row="0">—</span></div>
+        <div class="pd-stat-s"><span data-l="ru">от 0.1 мм за сутки</span><span data-l="en" lang="en">0.1 mm or more a day</span></div></div>
+      <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Часы с осадками</span><span data-l="en" lang="en">Wet hours</span></div>
+        <div class="pd-stat-v"><span data-draw="k-weth" data-source="ptot" data-field="wet_hours" data-row="0">—</span></div>
+        <div class="pd-stat-s"><span data-l="ru">от 0.1 мм за час</span><span data-l="en" lang="en">0.1 mm or more an hour</span></div></div>
+      <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Последние осадки</span><span data-l="en" lang="en">Last precipitation</span></div>
+        <div class="pd-stat-v"><span data-draw="k-lastwet" data-source="ptot" data-field="last_wet_day" data-row="0">—</span></div>
+        <div class="pd-stat-s"><span data-since="0" hidden><span data-l="ru">в последние сутки периода</span><span data-l="en" lang="en">on the last day of the period</span></span><span data-since="n"><span data-draw="k-since" data-source="ptot" data-field="days_since_wet" data-row="0">—</span> <span data-since-ago><span data-l="ru">сут. назад</span><span data-l="en" lang="en">d ago</span></span><span data-since-before hidden><span data-l="ru">сут. до конца периода</span><span data-l="en" lang="en">d before the period end</span></span></span></div></div>
+      <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Наибольшая за сутки</span><span data-l="en" lang="en">Wettest day</span></div>
+        <div class="pd-stat-v"><span data-draw="k-maxday" data-source="ptot" data-field="max_day_mm" data-row="0">—</span><span class="u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></div>
+        <div class="pd-stat-s" data-draw="k-maxday-at" data-source="ptot" data-field="max_day_date" data-row="0">—</div></div>
+      <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Наибольшая за час</span><span data-l="en" lang="en">Wettest hour</span></div>
+        <div class="pd-stat-v"><span data-draw="k-max1h" data-source="ptot" data-field="max_1h_mm" data-row="0">—</span><span class="u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></div>
+        <div class="pd-stat-s" data-draw="k-max1h-at" data-source="ptot" data-field="max_1h_end" data-row="0">—</div></div>
+      <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Наибольшая интенсивность</span><span data-l="en" lang="en">Peak rate</span></div>
+        <div class="pd-stat-v"><span data-draw="k-int" data-source="ptot" data-field="max_int_mmh" data-row="0">—</span><span class="u"><span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span></div>
+        <div class="pd-stat-s"><span data-l="ru">мгновенная, </span><span data-l="en" lang="en">instantaneous, </span><span data-draw="k-int-at" data-source="ptot" data-field="max_int_at" data-row="0">—</span></div></div>
+      <div class="pd-stat pd-stat-wide"><div class="pd-stat-k"><span data-l="ru">Самый долгий сухой период</span><span data-l="en" lang="en">Longest dry spell</span></div>
+        <div class="pd-stat-v"><span data-draw="k-dry" data-source="ptot" data-field="dry_days" data-row="0">—</span><span class="u"><span data-l="ru">сут.</span><span data-l="en" lang="en">days</span></span></div>
+        <div class="pd-stat-s"><span data-draw="k-dry-from" data-source="ptot" data-field="dry_from" data-row="0">—</span>–<span data-draw="k-dry-to" data-source="ptot" data-field="dry_to" data-row="0">—</span><span data-dry-on hidden><span data-l="ru">, продолжается</span><span data-l="en" lang="en">, ongoing</span></span> · <span data-l="ru">сутки меньше 0.1 мм подряд</span><span data-l="en" lang="en">consecutive days under 0.1 mm</span></div></div>
     </div>
   </section>
 
-  <details class="pd-fold" id="tab-days">
-    <summary><span data-l="ru">Таблица по суткам за период</span><span data-l="en" lang="en">Daily table for the period</span></summary>
-    <div class="pd-tw">
+  <section class="pd-wrap" id="alerts">
+    <div class="pd-alerts">
+      <span class="pd-alerts-ok" data-hz="none" hidden><span data-l="ru">Интенсивных осадков за период не было</span><span data-l="en" lang="en">No intense precipitation in the period</span></span>
+      <span class="pd-alerts-t" data-hz="some" hidden><span data-l="ru">Интенсивные осадки:</span><span data-l="en" lang="en">Intense precipitation:</span></span>
+      <span class="pd-hz" data-draw="hz-list" data-source="dsel"></span>
+      <span class="pd-alerts-note"><span data-l="ru">Критерии:</span><span data-l="en" lang="en">Criteria:</span> ≥ <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> <span data-l="ru">мм за 12 ч или мгновенная интенсивность ≥</span><span data-l="en" lang="en">mm in 12 h or instantaneous rate ≥</span> <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> <span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span>
+    </div>
+  </section>
+
+  <section class="pd-wrap pd-sec" id="period">
+    <div class="pd-sec-h">
+      <h2 class="pd-h2"><span data-l="ru">Осадки по суткам</span><span data-l="en" lang="en">Daily precipitation</span></h2>
+      <span class="pd-note"><span data-l="ru">Нажмите на сутки, чтобы открыть их ниже</span><span data-l="en" lang="en">Click a day to open it below</span></span>
+    </div>
+    <div class="pd-period">
+      <div class="pd-card" id="calendar">
+        <div class="pd-scale">
+          <span data-l="ru">мм за сутки</span><span data-l="en" lang="en">mm a day</span>
+          <span class="pd-scale-bins" aria-hidden="true"><i class="pd-b1"></i><i class="pd-b2"></i><i class="pd-b3"></i><i class="pd-b4"></i><i class="pd-b5"></i><i class="pd-b6"></i></span>
+          <span>0.1 · 1 · 2.5 · 5 · 10 · 20+</span>
+        </div>
+        <div>
+          <div class="pd-cal-head" data-l="ru"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div>
+          <div class="pd-cal-head" data-l="en" lang="en"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+          <div class="pd-cal" data-draw="calendar" data-source="dsel" role="group" aria-label="Календарь осадков / Precipitation calendar"></div>
+        </div>
+        <div class="pd-keys">
+          <span class="pd-key"><span aria-hidden="true">—</span><span data-l="ru">осадков не было</span><span data-l="en" lang="en">no precipitation</span></span>
+          <span class="pd-key"><span aria-hidden="true">&lt; 0.1</span><span data-l="ru">следы</span><span data-l="en" lang="en">trace</span></span>
+          <span class="pd-key"><svg width="12" height="12" aria-hidden="true" style="color:var(--c-haz)"><use href="#pd-bell"></use></svg><span data-l="ru">интенсивные осадки</span><span data-l="en" lang="en">intense precipitation</span></span>
+          <span class="pd-key"><span class="pd-sw" style="border:1px dashed #5b6f85" aria-hidden="true"></span><span data-l="ru">неполные сутки</span><span data-l="en" lang="en">partial day</span></span>
+        </div>
+      </div>
+      <div class="pd-card" id="period-charts">
+        <div class="pd-keys">
+          <span class="pd-key"><span class="pd-sw pd-sw-bar"></span><span data-l="ru">сумма за сутки</span><span data-l="en" lang="en">daily total</span></span>
+          <span class="pd-key"><span class="pd-sw pd-sw-haz"></span><span data-l="ru">сутки с интенсивными осадками</span><span data-l="en" lang="en">day with intense precipitation</span></span>
+          <span class="pd-key"><span class="pd-sw pd-sw-line pd-sw-cum"></span><span data-l="ru">нарастающая сумма по часам</span><span data-l="en" lang="en">hourly cumulative total</span></span>
+        </div>
+        <div class="pd-chartbox">
+          <span class="pd-plabel" style="top:0"><span data-l="ru">Сумма за сутки, мм</span><span data-l="en" lang="en">Daily total, mm</span></span>
+          <span class="pd-plabel" style="top:196px"><span data-l="ru">С начала периода, мм</span><span data-l="en" lang="en">Since period start, mm</span></span>
+          <div class="pd-chart" data-draw="ch-period" data-source="dsel pcum" role="img" aria-label="Суточные суммы и нарастающая сумма осадков / Daily and cumulative precipitation"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pd-wrap pd-sec" id="day">
+    <div class="pd-dayhero">
+      <div>
+        <p class="pd-kicker"><span data-l="ru">Выбранные сутки</span><span data-l="en" lang="en">Selected day</span></p>
+        <div class="pd-daynav">
+          <button type="button" class="pd-nav" data-day-step="-1" aria-label="Предыдущие сутки / Previous day"><svg aria-hidden="true"><use href="#pd-chev-l"></use></svg></button>
+          <span class="pd-dayname" data-draw="day-name" data-source="dday" data-field="date_local" data-row="0">—</span>
+          <button type="button" class="pd-nav" data-day-step="1" aria-label="Следующие сутки / Next day"><svg aria-hidden="true"><use href="#pd-chev-r"></use></svg></button>
+        </div>
+        <div class="pd-daysum"><span data-draw="d-sum" data-source="dday" data-field="sum_mm" data-row="0">—</span><span class="u"><span data-l="ru">мм за сутки</span><span data-l="en" lang="en">mm in the day</span></span></div>
+        <p class="pd-daysub"><span data-l="ru">Время ташкентское (UTC+5); сутки 00:00–24:00</span><span data-l="en" lang="en">Tashkent time (UTC+5); day 00:00–24:00</span><span class="warn" data-partial hidden> · <span data-l="ru">неполные сутки: кадров</span><span data-l="en" lang="en">partial day: frames</span> <span data-draw="d-n" data-source="dday" data-field="n" data-row="0">—</span> <span data-l="ru">из 96</span><span data-l="en" lang="en">of 96</span></span></p>
+      </div>
+      <div class="pd-tiles" id="day-tiles">
+        <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Наибольшая за час</span><span data-l="en" lang="en">Wettest hour</span></div>
+          <div class="pd-stat-v"><span data-draw="d-1h" data-source="dday" data-field="max_1h_mm" data-row="0">—</span><span class="u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></div>
+          <div class="pd-stat-s" data-draw="d-1h-at" data-source="dday" data-field="max_1h_end" data-row="0">—</div></div>
+        <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Наибольшая интенсивность</span><span data-l="en" lang="en">Peak rate</span></div>
+          <div class="pd-stat-v"><span data-draw="d-int" data-source="dday" data-field="max_int_mmh" data-row="0">—</span><span class="u"><span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span></div>
+          <div class="pd-stat-s"><span data-l="ru">мгновенная, в </span><span data-l="en" lang="en">instantaneous, at </span><span data-draw="d-int-at" data-source="dday" data-field="max_int_at" data-row="0">—</span></div></div>
+        <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Наибольшая за 12 ч</span><span data-l="en" lang="en">Wettest 12 hours</span></div>
+          <div class="pd-stat-v"><span data-draw="d-12h" data-source="dday" data-field="max_12h_mm" data-row="0">—</span><span class="u"><span data-l="ru">мм</span><span data-l="en" lang="en">mm</span></span></div>
+          <div class="pd-stat-s" data-draw="d-12h-at" data-source="dday" data-field="max_12h_end" data-row="0">—</div></div>
+        <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Часы с осадками</span><span data-l="en" lang="en">Wet hours</span></div>
+          <div class="pd-stat-v"><span data-draw="d-weth" data-source="dday" data-field="wet_h" data-row="0">—</span></div>
+          <div class="pd-stat-s"><span data-l="ru">от 0.1 мм за час</span><span data-l="en" lang="en">0.1 mm or more an hour</span></div></div>
+        <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Начало – окончание</span><span data-l="en" lang="en">Start – end</span></div>
+          <div class="pd-stat-v"><span data-wet><span data-draw="d-first" data-source="dday" data-field="first_wet" data-row="0">—</span>–<span data-draw="d-last" data-source="dday" data-field="last_wet" data-row="0">—</span></span><span data-nowet hidden>—</span></div>
+          <div class="pd-stat-s"><span data-l="ru">первый и последний кадр с осадками</span><span data-l="en" lang="en">first and last wet frame</span></div></div>
+        <div class="pd-stat"><div class="pd-stat-k"><span data-l="ru">Продолжительность</span><span data-l="en" lang="en">Duration</span></div>
+          <div class="pd-stat-v"><span data-draw="d-dur-h" data-source="dday" data-field="dur_h" data-row="0">—</span><span class="u"><span data-l="ru">ч</span><span data-l="en" lang="en">h</span></span> <span data-draw="d-dur-m" data-source="dday" data-field="dur_m" data-row="0">—</span><span class="u"><span data-l="ru">мин</span><span data-l="en" lang="en">min</span></span></div>
+          <div class="pd-stat-s"><span data-l="ru">кадры с осадками × 15 мин</span><span data-l="en" lang="en">wet frames × 15 min</span></div></div>
+      </div>
+    </div>
+
+    <div class="pd-empty" data-dayempty hidden>
+      <svg width="22" height="22" aria-hidden="true" style="flex-shrink:0"><use href="#pd-sun"></use></svg>
+      <span><b><span data-l="ru">Осадков не было.</span><span data-l="en" lang="en">No precipitation.</span></b> <span data-l="ru">Во всех кадрах этих суток мгновенная интенсивность равна нулю. Выберите другие сутки в календаре или стрелками.</span><span data-l="en" lang="en">The instantaneous rate is zero in every frame of this day. Pick another day in the calendar or with the arrows.</span></span>
+    </div>
+
+    <div class="pd-card" id="day-chart" data-dayfull>
+      <div class="pd-card-h">
+        <div class="pd-keys">
+          <span class="pd-key"><span class="pd-sw pd-sw-bar"></span><span data-l="ru">сумма за интервал</span><span data-l="en" lang="en">interval total</span></span>
+          <span class="pd-key"><span class="pd-sw pd-sw-line pd-sw-int"></span><span data-l="ru">мгновенная интенсивность по кадрам</span><span data-l="en" lang="en">instantaneous rate by frame</span></span>
+          <span class="pd-key" data-thr="on" hidden><span class="pd-sw pd-sw-dash"></span><span><span data-l="ru">порог</span><span data-l="en" lang="en">threshold</span> <span data-draw="thrint-k" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</span> <span data-l="ru">мм/ч</span><span data-l="en" lang="en">mm/h</span></span></span>
+          <span class="pd-key" data-thr="off" hidden><span><span data-l="ru">порог</span><span data-l="en" lang="en">threshold</span> <span data-draw="thrint-k" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</span> <span data-l="ru">мм/ч — выше графика</span><span data-l="en" lang="en">mm/h is above the chart</span></span></span>
+        </div>
+        <span class="pd-seg" role="group" aria-label="Шаг / Step">
+          <button type="button" data-step-btn="15" aria-pressed="false"><span data-l="ru">15 мин</span><span data-l="en" lang="en">15 min</span></button>
+          <button type="button" data-step-btn="30" aria-pressed="false"><span data-l="ru">30 мин</span><span data-l="en" lang="en">30 min</span></button>
+          <button type="button" data-step-btn="60" aria-pressed="true"><span data-l="ru">1 час</span><span data-l="en" lang="en">1 hour</span></button>
+        </span>
+      </div>
+      <div class="pd-chartbox">
+        <span class="pd-plabel" style="top:0">
+          <span data-step-title="15" hidden><span data-l="ru">Осадки за каждые 15 минут, мм</span><span data-l="en" lang="en">Precipitation every 15 minutes, mm</span></span>
+          <span data-step-title="30" hidden><span data-l="ru">Осадки за каждые 30 минут, мм</span><span data-l="en" lang="en">Precipitation every 30 minutes, mm</span></span>
+          <span data-step-title="60"><span data-l="ru">Осадки за каждый час, мм</span><span data-l="en" lang="en">Hourly precipitation, mm</span></span>
+        </span>
+        <span class="pd-plabel" style="top:196px"><span data-l="ru">Мгновенная интенсивность, мм/ч</span><span data-l="en" lang="en">Instantaneous rate, mm/h</span></span>
+        <div class="pd-chart" data-draw="ch-day" data-source="dagg dframes" role="img" aria-label="Осадки выбранных суток по интервалам и мгновенная интенсивность / Selected day precipitation and instantaneous rate"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pd-wrap pd-folds" id="details">
+    <details class="pd-fold" id="table-days">
+      <summary><span data-l="ru">Таблица по суткам за период</span><span data-l="en" lang="en">Daily table for the period</span></summary>
+      <div class="pd-tw">
       <table class="pd-table" data-source="dsel" data-row-key="date_local">
         <thead><tr>
           <th class="l" data-field="date_local"><span data-l="ru">Дата</span><span data-l="en" lang="en">Date</span></th>
           <th data-field="sum_mm"><span data-l="ru">Сумма, мм</span><span data-l="en" lang="en">Total, mm</span></th>
           <th data-field="cum_mm"><span data-l="ru">С начала периода, мм</span><span data-l="en" lang="en">Cumulative, mm</span></th>
-          <th data-field="max_1h_mm"><span data-l="ru">Макс. за 1 ч, мм</span><span data-l="en" lang="en">Max 1 h, mm</span></th>
-          <th data-field="max_int_mmh"><span data-l="ru">Макс. мгновенная интенс., мм/ч</span><span data-l="en" lang="en">Peak instantaneous rate, mm/h</span></th>
-          <th data-field="max_12h_mm"><span data-l="ru">Макс. за 12 ч, мм</span><span data-l="en" lang="en">Max 12 h, mm</span></th>
-          <th data-field="wet_h"><span data-l="ru">Часов с осадками</span><span data-l="en" lang="en">Wet hours</span></th>
+          <th data-field="max_1h_mm"><span data-l="ru">Наиб. за час, мм</span><span data-l="en" lang="en">Max 1 h, mm</span></th>
+          <th data-field="max_int_mmh"><span data-l="ru">Мгновенная интенс. до, мм/ч</span><span data-l="en" lang="en">Peak rate, mm/h</span></th>
+          <th data-field="max_12h_mm"><span data-l="ru">Наиб. за 12 ч, мм</span><span data-l="en" lang="en">Max 12 h, mm</span></th>
+          <th data-field="wet_h"><span data-l="ru">Часы с осадками</span><span data-l="en" lang="en">Wet hours</span></th>
           <th data-field="n"><span data-l="ru">Кадров из 96</span><span data-l="en" lang="en">Frames of 96</span></th>
         </tr></thead>
         <tbody data-draw="tb-days"></tbody>
       </table>
-    </div>
-  </details>
-
-  <details class="pd-fold" id="tab-day">
-    <summary><span data-l="ru">Таблица выбранных суток по интервалам</span><span data-l="en" lang="en">Selected day by interval</span></summary>
-    <div class="pd-tw">
+      </div>
+    </details>
+    <details class="pd-fold" id="table-day">
+      <summary><span data-l="ru">Таблица выбранных суток по интервалам</span><span data-l="en" lang="en">Selected day table by interval</span></summary>
+      <div class="pd-tw">
       <table class="pd-table" data-source="dagg" data-row-key="end_local">
         <thead><tr>
-          <th class="l" data-field="end_local"><span data-l="ru">Конец интервала</span><span data-l="en" lang="en">Interval end</span></th>
+          <th class="l" data-field="end_local"><span data-l="ru">Интервал</span><span data-l="en" lang="en">Interval</span></th>
           <th data-field="sum_mm"><span data-l="ru">Осадки, мм</span><span data-l="en" lang="en">Precipitation, mm</span></th>
-          <th data-field="mean_mmh"><span data-l="ru">Средняя интенс. за интервал, мм/ч</span><span data-l="en" lang="en">Mean rate over interval, mm/h</span></th>
-          <th data-field="max_mmh"><span data-l="ru">Макс. мгновенная интенс., мм/ч</span><span data-l="en" lang="en">Peak instantaneous rate, mm/h</span></th>
+          <th data-field="mean_mmh"><span data-l="ru">Средняя интенс. за интервал, мм/ч</span><span data-l="en" lang="en">Mean rate, mm/h</span></th>
+          <th data-field="max_mmh"><span data-l="ru">Мгновенная интенс. до, мм/ч</span><span data-l="en" lang="en">Peak rate, mm/h</span></th>
           <th data-field="cum_mm"><span data-l="ru">С начала суток, мм</span><span data-l="en" lang="en">Since day start, mm</span></th>
           <th data-field="n"><span data-l="ru">Кадров</span><span data-l="en" lang="en">Frames</span></th>
         </tr></thead>
         <tbody data-draw="tb-day"></tbody>
       </table>
-    </div>
-  </details>
+      </div>
+    </details>
+    <details class="pd-fold pd-method" id="method">
+      <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
+      <dl class="pd-facts">
+        <dt><span data-l="ru">Пункт</span><span data-l="en" lang="en">Place</span></dt>
+        <dd><span data-draw="f-lat" data-source="places">—</span>° <span data-l="ru">с. ш.</span><span data-l="en" lang="en">N</span>, <span data-draw="f-lon" data-source="places">—</span>° <span data-l="ru">в. д.</span><span data-l="en" lang="en">E</span>, <span data-draw="f-elev" data-source="places">—</span> <span data-l="ru">м</span><span data-l="en" lang="en">m</span></dd>
+        <dt><span data-l="ru">Узел сетки 0.1°</span><span data-l="en" lang="en">0.1° grid node</span></dt>
+        <dd><span data-draw="f-nlat" data-source="places">—</span>°, <span data-draw="f-nlon" data-source="places">—</span>°</dd>
+        <dt><span data-l="ru">Ряд данных</span><span data-l="en" lang="en">Data series</span></dt>
+        <dd><span data-draw="f-first" data-source="places">—</span> – <span data-draw="f-last" data-source="places">—</span></dd>
+        <dt><span data-l="ru">Последний кадр (UTC)</span><span data-l="en" lang="en">Latest frame (UTC)</span></dt>
+        <dd data-draw="f-frame-utc" data-source="info" data-field="value" data-where="key=latest_frame_utc">—</dd>
+        <dt><span data-l="ru">Данные обновлены</span><span data-l="en" lang="en">Data updated</span></dt>
+        <dd><span data-draw="f-upd" data-source="info" data-field="value" data-where="key=updated_local">—</span> <span data-l="ru">(время ташкентское)</span><span data-l="en" lang="en">(Tashkent time)</span></dd>
+      </dl>
+      <ul class="pd-notes" data-l="ru">
+        <li>PARDIG-NRT (Google DeepMind, Google Research) оценивает мгновенную интенсивность осадков по спутниковым наблюдениям и полям ECMWF; модель обучена на спутниковых данных GPM. Сетка 0.1° (около 10 км), кадры через 15 минут, обычная задержка 2–8 часов. Берётся ближайший к пункту узел сетки: это среднее по ячейке, а не значение в точке.</li>
+        <li>Кадр — мгновенная интенсивность (мм/ч) на момент :00, :15, :30 или :45, а не сумма за 15 минут. Слой за 15 минут = мгновенная интенсивность × 0.25 ч. Суммы за 30 минут, час, сутки и период складываются из этих слоёв.</li>
+        <li>Интервал (начало; конец]: конец включён. Сутки — календарные по ташкентскому времени, кадр 00:00 относится к предыдущим суткам. В полных сутках 96 кадров; если кадров меньше, сумма считается по имеющимся, а сутки отмечены пунктиром.</li>
+        <li>Сутки с осадками — от 0.1 мм; час с осадками — от 0.1 мм за час. Сухой период — сутки меньше 0.1 мм подряд. Нарастающая сумма на графике периода считается по часам.</li>
+        <li>Сумма за 12 ч — скользящая по кадрам. Сутки получают наибольшую сумму окна, середина которого попадает в эти сутки; эпизод выше порога отмечается один раз — в сутках его наибольшего окна. Интенсивные осадки: ≥ <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> мм за 12 ч или мгновенная интенсивность ≥ <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> мм/ч.</li>
+        <li>Ограничения: интенсивность ограничена 75 мм/ч; в высоких горах точность ниже; зимой, при снеге и в горах осадки занижаются; слабый снег и морось распознаются плохо.</li>
+        <li>Данные готовит блокнот Colab: читает новые кадры, копит весь ряд и записывает его в файл данных дашборда, а на GitHub — в файл data.json рядом с этой страницей; страница читает его при открытии. Чтобы обновить данные, запустите блокнот.</li>
+      </ul>
+      <ul class="pd-notes" data-l="en" lang="en">
+        <li>PARDIG-NRT (Google DeepMind, Google Research) estimates instantaneous precipitation rate from satellite observations and ECMWF fields, trained on GPM satellite data. 0.1° grid (~10 km), frames every 15 minutes, usual delay 2–8 hours. The grid node nearest to the place is used: a cell average, not a point value.</li>
+        <li>A frame is the instantaneous rate (mm/h) at :00, :15, :30 or :45, not a 15-minute total. 15-minute depth = instantaneous rate × 0.25 h. Totals for 30 minutes, an hour, a day and the period add up these depths.</li>
+        <li>An interval is (start; end]: the end is included. Days are Tashkent calendar days, and the 00:00 frame belongs to the previous day. A full day has 96 frames; with fewer, the total uses the frames available and the day has a dashed border.</li>
+        <li>A wet day has 0.1 mm or more; a wet hour has 0.1 mm or more in the hour. A dry spell is consecutive days under 0.1 mm. The cumulative total on the period chart is computed by the hour.</li>
+        <li>The 12-hour total is a running sum over frames. A day gets the largest total of a window centred in that day; an episode above the threshold is marked once, on the day of its largest window. Intense precipitation: ≥ <b data-draw="thr12" data-source="info" data-field="value" data-where="key=thr_12h_mm">—</b> mm in 12 h or an instantaneous rate ≥ <b data-draw="thrint" data-source="info" data-field="value" data-where="key=thr_int_mmh">—</b> mm/h.</li>
+        <li>Known limits: rates are capped at 75 mm/h; skill is lower over high mountains; in winter, snowy and mountain conditions precipitation is underestimated; light snow and drizzle are hard to detect.</li>
+        <li>A Colab notebook reads new frames, keeps the whole series and writes it to the dashboard's data file and, on GitHub, to the data.json file next to this page, which the page reads when opened. Run the notebook to update the data.</li>
+      </ul>
+    </details>
+  </section>
 
-  <details class="pd-fold" id="method">
-    <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
-    <ul class="pd-notes" data-l="ru">
-      <li>PARDIG-NRT (Google DeepMind, Google Research) — оценка мгновенной интенсивности осадков по спутниковым наблюдениям и полям ECMWF, обученная на данных спутника GPM. Сетка 0.1° (~10 км), кадры через 15 минут, задержка обычно 2–8 часов. Берётся ближайший к пункту узел сетки: это среднее по ячейке, а не точечное значение.</li>
-      <li>Кадр — карта мгновенной интенсивности осадков (скорости выпадения, мм/ч) на момент :00, :15, :30 или :45 UTC; это не сумма за 15 минут. Слой осадков за 15 минут оценивается как мгновенная интенсивность кадра × 0.25 ч. Суммы за 30 минут, час, сутки и период — суммы таких слоёв. Интервал подписан временем конца; сутки — по ташкентскому времени, кадр 00:00 относится к предыдущим суткам. Полные сутки — 96 кадров; если кадров меньше, сумма считается по имеющимся.</li>
-      <li>Сумма за 12 часов — скользящая по кадрам. Для суток берётся наибольшая сумма окна, середина которого приходится на эти сутки; эпизод выше порога отмечается один раз — в сутках его наибольшего окна.</li>
-      <li>Ограничения по документации: интенсивность ограничена 75 мм/ч; над высокими горами точность ниже; зимой в снежных и горных условиях осадки занижаются; слабый снег и морось распознаются плохо.</li>
-      <li>Данные готовит блокнот Colab: читает новые кадры, копит весь ряд и записывает его в файл data.json рядом с этой страницей, а страница читает его при открытии. Новые данные появляются после запуска блокнота.</li>
-    </ul>
-    <ul class="pd-notes" data-l="en" lang="en">
-      <li>PARDIG-NRT (Google DeepMind, Google Research) estimates instantaneous precipitation rate from satellite observations and ECMWF fields, trained on GPM satellite data. 0.1° grid (~10 km), frames every 15 minutes, usual delay 2–8 hours. The grid node nearest to the place is used: a cell average, not a point value.</li>
-      <li>A frame is a map of the instantaneous precipitation rate (mm/h) at :00, :15, :30 or :45 UTC; it is not a 15-minute total. The 15-minute depth is estimated as the frame's instantaneous rate × 0.25 h. Totals for 30 minutes, an hour, a day and the period add up these depths. An interval is labelled by its end; days are Tashkent calendar days, and the 00:00 frame belongs to the previous day. A full day has 96 frames; with fewer, the total uses the frames available.</li>
-      <li>The 12-hour total is a running sum over frames. A day gets the largest total of a window centred in that day; an episode above the threshold is marked once, on the day of its largest window.</li>
-      <li>Known limits: rates are capped at 75 mm/h; skill is lower over high mountains; in winter, snowy and mountain conditions precipitation is underestimated; light snow and drizzle are hard to detect.</li>
-      <li>A Colab notebook reads new frames, keeps the whole series and writes it to the data.json file next to this page, which the page reads when opened. New data appear after the notebook runs.</li>
-    </ul>
-  </details>
-
-  <footer class="pd-foot" id="source">
+  <footer class="pd-wrap pd-foot" id="source">
     <p data-l="ru">Источник данных: <a href="https://developers.google.com/weathernext/guides/pardig" target="_blank" rel="noopener">PARDIG</a> (Precipitation AI Reanalysis – Densely Inferred GPM), Google DeepMind и Google Research; Shalev et al. (2026), arXiv:2611.13941. Лицензия <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Данные изменены: выбран ближайший к пункту узел сетки, единицы переведены в мм/ч, рассчитаны суммы за интервалы, сутки и период и отметки интенсивных осадков. Это экспериментальная оценка осадков, а не наблюдения и не прогноз; не используйте её как единственный источник для решений о безопасности.</p>
     <p data-l="en" lang="en">Data source: <a href="https://developers.google.com/weathernext/guides/pardig" target="_blank" rel="noopener">PARDIG</a> (Precipitation AI Reanalysis – Densely Inferred GPM), Google DeepMind and Google Research; Shalev et al. (2026), arXiv:2611.13941. Licence <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Changes made: the grid node nearest to the place was selected, units converted to mm/h, and interval, daily and period totals and intense-precipitation marks computed. This is an experimental precipitation estimate, not observations or a forecast; do not use it as the only source for safety decisions.</p>
   </footer>
 </div>
 
-<script src="dash-gh.js"></script>
-<script src="pd-data.js"></script>
-<script src="pd-ui.js"></script>
+<script>
+  /* ---------- Данные: файл с расчётами (набор src); страница выбирает лист по своим параметрам ---------- */
+  dash.calc('places', {
+    title: "Пункты",
+    description: "Пункты, координаты пункта и узла сетки, высота, первые и последние сутки ряда. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["date_local", "max_1h_end", "max_int_at", "max_12h_end", "frames", "place", "place_ru", "place_en", "first_day", "last_day", "last_frame_local", "key"]); const fixT = (s) => s.replace(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})(?::\d{2})?$/, (m, d, h, mi) => d + ' ' + h.padStart(2, '0') + ':' + mi);
+      const name = 'places';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['places'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+  dash.calc('info', {
+    title: "Сведения и пороги",
+    description: "Время обновления, последний кадр и пороги интенсивных осадков. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["date_local", "max_1h_end", "max_int_at", "max_12h_end", "frames", "place", "place_ru", "place_en", "first_day", "last_day", "last_frame_local", "key"]); const fixT = (s) => s.replace(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})(?::\d{2})?$/, (m, d, h, mi) => d + ' ' + h.padStart(2, '0') + ':' + mi);
+      const name = 'info';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['info'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+  dash.calc('daily', {
+    title: "Суточные данные пункта",
+    description: "Для выбранного пункта: суточные суммы, максимумы, отметки интенсивных осадков и мгновенная интенсивность по кадрам. Из файла данных дашборда.",
+    inputs: ['src'],
+    fn: (src) => {
+      const TEXT = new Set(["date_local", "max_1h_end", "max_int_at", "max_12h_end", "frames", "place", "place_ru", "place_en", "first_day", "last_day", "last_frame_local", "key"]); const fixT = (s) => s.replace(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})(?::\d{2})?$/, (m, d, h, mi) => d + ' ' + h.padStart(2, '0') + ':' + mi);
+      const p = dash.params(); const name = (p.place || 'Tashkent') + '_daily';
+      const sheet = (src && src.alias && src.alias[name]) || name;
+      const values = src && src.sheets && src.sheets[sheet] && src.sheets[sheet]['daily'];
+      if (!Array.isArray(values) || !values.length) return [];
+      const columns = values[0].map(String);
+      const info = columns[0] === 'key' && columns[1] === 'value';
+      return values.slice(1).filter((r) => r && r.length && r[0] != null && String(r[0]) !== '').map((r) => {
+        const o = {};
+        columns.forEach((c, i) => {
+          const v = r[i];
+          if (TEXT.has(c) || (info && c === 'value')) { o[c] = v == null ? '' : fixT(String(v)); return; }
+          if (v == null || v === '') { o[c] = null; return; }
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/\s/g, '').replace(',', '.'));
+          o[c] = Number.isFinite(n) ? n : null;
+        });
+        return o;
+      });
+    },
+  });
+
+  /* ---------- Расчёты ---------- */
+  dash.calc('periods', {
+    title: 'Периоды для выбора',
+    description: 'Границы периодов, которые можно выбрать: с 1 октября текущего сезона, последние 30 и 90 суток, весь ряд и календарные месяцы (в пределах ряда).',
+    inputs: ['daily'],
+    fn: (daily) => {
+      const ds = daily.map((r) => r.date_local).filter(Boolean).sort();
+      if (!ds.length) return [];
+      const first = ds[0], last = ds[ds.length - 1];
+      const back = (n) => new Date(Date.parse(last + 'T00:00:00Z') - (n - 1) * 86400000).toISOString().slice(0, 10);
+      const y = Number(last.slice(0, 4)), m = Number(last.slice(5, 7));
+      const mk = (per, from, to) => { from = from < first ? first : from; to = to > last ? last : to; return {per, from, to, days: ds.filter((d) => d >= from && d <= to).length}; };
+      const out = [mk('oct', (m >= 10 ? y : y - 1) + '-10-01', last), mk('30', back(30), last), mk('90', back(90), last), mk('all', first, last)];
+      const full = new Set(daily.filter((r) => (r.n || 0) >= 48).map((r) => r.date_local.slice(0, 7)));
+      const months = [...new Set(ds.map((d) => d.slice(0, 7)))].reverse();
+      for (const mo of months) if (full.has(mo) || mo === last.slice(0, 7)) out.push(mk(mo, mo + '-01', mo + '-31'));
+      return out;
+    },
+  });
+  dash.calc('dsel', {
+    title: 'Сутки выбранного периода',
+    description: 'Суточные строки пункта за выбранный период с нарастающей суммой от начала периода.',
+    inputs: ['daily', 'periods'],
+    fn: (daily, periods) => {
+      const per = String(dash.params().per || 'oct');
+      const p = periods.find((r) => r.per === per) || periods.find((r) => r.per === 'oct');
+      if (!p) return [];
+      let c = 0;
+      return daily.filter((r) => r.date_local >= p.from && r.date_local <= p.to).sort((a, b) => (a.date_local < b.date_local ? -1 : 1)).map((r) => {
+        c += r.sum_mm || 0;
+        return {date_local: r.date_local, sum_mm: r.sum_mm, cum_mm: Math.round(c * 1000) / 1000, n: r.n, max_1h_mm: r.max_1h_mm, max_1h_end: r.max_1h_end,
+          max_int_mmh: r.max_int_mmh, max_int_at: r.max_int_at, max_12h_mm: r.max_12h_mm, max_12h_end: r.max_12h_end, wet_h: r.wet_h, flag12: r.flag12, flagint: r.flagint};
+      });
+    },
+  });
+  dash.calc('ptot', {
+    title: 'Итоги периода',
+    description: 'Сумма осадков; сутки (от 0.1 мм) и часы с осадками; наибольшие суточная и часовая суммы и мгновенная интенсивность; доля самых дождливых суток в сумме, %; последние сутки с осадками и сколько суток прошло; самый долгий сухой период (сутки меньше 0.1 мм подряд).',
+    inputs: ['dsel'],
+    fn: (dsel) => {
+      if (!dsel.length) return [];
+      const top = (f) => dsel.reduce((b, r) => (r[f] != null && (b == null || r[f] > b[f]) ? r : b), null);
+      const d = top('sum_mm'), h = top('max_1h_mm'), i = top('max_int_mmh');
+      const first = dsel[0].date_local, last = dsel[dsel.length - 1].date_local;
+      const total = dsel.reduce((s, r) => s + (r.sum_mm || 0), 0);
+      const days = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
+      const wet = dsel.filter((r) => (r.sum_mm || 0) >= 0.1);
+      const lastWet = wet.length ? wet[wet.length - 1].date_local : '';
+      let best = {n: 0, from: '', to: ''}, cur = null;
+      for (const r of dsel) {
+        if ((r.sum_mm || 0) < 0.1) { if (!cur) cur = {n: 0, from: r.date_local}; cur.n += 1; cur.to = r.date_local; if (cur.n >= best.n) best = {...cur}; }
+        else cur = null;
+      }
+      return [{first_day: first, last_day: last, days: dsel.length, total_mm: Math.round(total * 10) / 10,
+        wet_days: wet.length, wet_hours: dsel.reduce((s, r) => s + (r.wet_h || 0), 0),
+        max_day_mm: d ? d.sum_mm : null, max_day_date: d && d.sum_mm > 0 ? d.date_local : '',
+        max_day_share_pct: d && total > 0 ? Math.round(d.sum_mm / total * 100) : null,
+        max_1h_mm: h ? h.max_1h_mm : null, max_1h_end: h && h.max_1h_mm > 0 ? h.max_1h_end : '',
+        max_int_mmh: i ? i.max_int_mmh : null, max_int_at: i && i.max_int_mmh > 0 ? i.max_int_at : '',
+        last_wet_day: lastWet, days_since_wet: lastWet ? days(lastWet, last) : null,
+        dry_days: best.n, dry_from: best.from, dry_to: best.to, dry_ongoing: best.n > 0 && best.to === last ? 1 : 0,
+        events: dsel.filter((r) => r.flag12 || r.flagint).length}];
+    },
+  });
+  dash.calc('place_tot', {
+    title: 'Сумма за период по пунктам',
+    description: 'Сумма осадков каждого пункта за те же даты, что и выбранный период, — для кнопок пунктов.',
+    inputs: ['src', 'places', 'periods'],
+    fn: (src, places, periods) => {
+      const per = String(dash.params().per || 'oct');
+      const p = periods.find((r) => r.per === per) || periods.find((r) => r.per === 'oct');
+      return places.map((pl) => {
+        const v = src && src.sheets && src.sheets[pl.place + '_daily'] && src.sheets[pl.place + '_daily'].daily;
+        if (!p || !Array.isArray(v) || v.length < 2) return {place: pl.place, total_mm: null};
+        const c = v[0].map(String), iD = c.indexOf('date_local'), iS = c.indexOf('sum_mm');
+        const s = v.slice(1).filter((r) => r && r[iD] && String(r[iD]).slice(0, 10) >= p.from && String(r[iD]).slice(0, 10) <= p.to).reduce((a, r) => a + (Number(r[iS]) || 0), 0);
+        return {place: pl.place, total_mm: Math.round(s * 10) / 10};
+      });
+    },
+  });
+  dash.calc('pcum', {
+    title: 'Нарастающая сумма по часам',
+    description: 'Сумма осадков от начала периода на конец каждого часа: слои 15-минутных кадров (мгновенная интенсивность × 0.25 ч), сложенные по часам.',
+    inputs: ['daily', 'dsel'],
+    fn: (daily, dsel) => {
+      if (!dsel.length) return [];
+      const byDay = new Map(daily.map((r) => [r.date_local, r]));
+      const out = [{t: dsel[0].date_local + ' 00:00', cum_mm: 0}];
+      let c = 0;
+      for (const d of dsel) {
+        const row = byDay.get(d.date_local);
+        const vals = row && row.frames ? row.frames.trim().split(/\s+/) : [];
+        const t0 = Date.parse(d.date_local + 'T00:00:00Z');
+        for (let h = 0; h < 24; h++) {
+          for (const v of vals.slice(h * 4, h * 4 + 4)) { const r = Number(v); if (v !== '-' && Number.isFinite(r)) c += r * 0.25; }
+          const t = new Date(t0 + (h + 1) * 3600000).toISOString();
+          out.push({t: t.slice(0, 10) + ' ' + t.slice(11, 16), cum_mm: Math.round(c * 1000) / 1000});
+        }
+      }
+      return out;
+    },
+  });
+  dash.calc('dday', {
+    title: 'Выбранные сутки',
+    description: 'Суточная строка выбранных суток (по умолчанию — последние сутки с осадками от 1 мм) и ход осадков по кадрам: первый и последний кадр с мгновенной интенсивностью больше 0, продолжительность (число таких кадров × 15 мин), она же в часах и минутах.',
+    inputs: ['daily', 'dsel'],
+    fn: (daily, dsel) => {
+      if (!dsel.length) return [];
+      const want = dash.params().day;
+      const wet1 = dsel.filter((r) => (r.sum_mm || 0) >= 1), wet = dsel.filter((r) => (r.sum_mm || 0) >= 0.1);
+      const row = dsel.find((r) => r.date_local === want) || (wet1.length ? wet1[wet1.length - 1] : wet.length ? wet[wet.length - 1] : dsel[dsel.length - 1]);
+      const src = daily.find((r) => r.date_local === row.date_local);
+      const vals = src && src.frames ? src.frames.trim().split(/\s+/) : [];
+      const t0 = Date.parse(row.date_local + 'T00:00:00Z');
+      const at = (k) => { const t = new Date(t0 + (k + 1) * 900000).toISOString(); return t.slice(0, 10) + ' ' + t.slice(11, 16); };
+      const wetK = vals.map((v, k) => (v !== '-' && Number(v) > 0 ? k : -1)).filter((k) => k >= 0);
+      return [{...row, first_wet: wetK.length ? at(wetK[0]) : '', last_wet: wetK.length ? at(wetK[wetK.length - 1]) : '', wet_min: wetK.length * 15,
+        dur_h: Math.floor(wetK.length * 15 / 60), dur_m: (wetK.length * 15) % 60}];
+    },
+  });
+  dash.calc('dframes', {
+    title: 'Кадры выбранных суток',
+    description: '96 кадров PARDIG выбранных суток: время кадра (ташкентское), мгновенная интенсивность, мм/ч, и слой за 15 минут, мм (мгновенная интенсивность × 0.25 ч).',
+    inputs: ['daily', 'dday'],
+    fn: (daily, dday) => {
+      const day = dday[0] && dday[0].date_local;
+      const row = day && daily.find((r) => r.date_local === day);
+      if (!row || !row.frames) return [];
+      const t0 = Date.parse(day + 'T00:00:00Z');
+      return row.frames.trim().split(/\s+/).slice(0, 96).map((v, k) => {
+        const t = new Date(t0 + (k + 1) * 900000).toISOString();
+        const r = v === '-' || v === '' ? null : Number(v);
+        return {local: t.slice(0, 10) + ' ' + t.slice(11, 16), rate_mmh: Number.isFinite(r) ? r : null, depth_mm: Number.isFinite(r) ? Math.round(r * 250) / 1000 : null};
+      });
+    },
+  });
+  dash.calc('dagg', {
+    title: 'Суммы выбранных суток по интервалам',
+    description: 'Слои 15-минутных кадров, сложенные по интервалам 15 мин, 30 мин или 1 ч (начало; конец]: сумма, средняя интенсивность за интервал, наибольшая мгновенная интенсивность, сумма с начала суток.',
+    inputs: ['dframes'],
+    fn: (fr) => {
+      const step = [15, 30, 60].includes(Number(dash.params().step)) ? Number(dash.params().step) : 60;
+      const k = step / 15, out = [];
+      let cum = 0;
+      for (let i = 0; i + k <= fr.length; i += k) {
+        const part = fr.slice(i, i + k), ok = part.filter((p) => p.rate_mmh != null);
+        const s = ok.reduce((a, p) => a + p.rate_mmh * 0.25, 0);
+        if (ok.length) cum += s;
+        const st = new Date(Date.parse(part[part.length - 1].local.replace(' ', 'T') + ':00Z') - step * 60000).toISOString();
+        out.push({start_local: st.slice(0, 10) + ' ' + st.slice(11, 16), end_local: part[part.length - 1].local, sum_mm: ok.length ? Math.round(s * 1000) / 1000 : null,
+          mean_mmh: ok.length ? Math.round(s / (step / 60) * 1000) / 1000 : null, max_mmh: ok.length ? Math.max(...ok.map((p) => p.rate_mmh)) : null,
+          cum_mm: Math.round(cum * 1000) / 1000, n: ok.length, step});
+      }
+      return out;
+    },
+  });
+  dash.calc('age_h', {
+    title: 'Возраст данных, ч',
+    description: 'Сколько часов прошло с последнего обновления таблицы (время Ташкента, UTC+5) до открытия страницы.',
+    inputs: ['info'],
+    fn: (info) => {
+      const r = info.find((x) => x.key === 'updated_local');
+      const t = r && Date.parse(r.value.replace(' ', 'T') + ':00+05:00');
+      return Number.isFinite(t) ? Math.max(0, Math.round((Date.now() - t) / 3600000)) : null;
+    },
+  });
+</script>
+<script>
+  /* ---------- Помощники ---------- */
+  const PD = (window.PD = {});
+  PD.L = () => (dash.params().lang === 'en' ? 'en' : 'ru');
+  PD.TR = {
+    ru: {wd: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'], mon: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+      monS: ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],
+      monN: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+      mm: 'мм', mmh: 'мм/ч', fail: 'Не удалось загрузить данные', none: 'Нет данных',
+      pOct: 'С 1 октября', p30: 'Последние 30 суток', p90: 'Последние 90 суток', pAll: 'Весь ряд',
+      day: 'за сутки', cumTo: 'с начала периода к', cum: 'с начала периода', ivl: 'осадки за интервал', mean: 'средняя интенсивность', inst: 'мгновенная интенсивность в',
+      h12: 'за 12 ч', frames: 'кадров', of: 'из 96', none0: 'осадков не было', trace: 'следы'},
+    en: {wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], mon: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      monS: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      monN: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      mm: 'mm', mmh: 'mm/h', fail: 'Failed to load the data', none: 'No data',
+      pOct: 'Since 1 October', p30: 'Last 30 days', p90: 'Last 90 days', pAll: 'Whole series',
+      day: 'day total', cumTo: 'since period start to', cum: 'since period start', ivl: 'interval total', mean: 'mean rate', inst: 'instantaneous rate at',
+      h12: 'in 12 h', frames: 'frames', of: 'of 96', none0: 'no precipitation', trace: 'trace'},
+  };
+  PD.tr = (k) => PD.TR[PD.L()][k];
+  PD.enc = (s) => encodeURIComponent(String(s));
+  PD.num = (v) => v != null && Number.isFinite(v);
+  PD.f1 = (v) => (PD.num(v) ? (Math.round(v * 10) / 10).toFixed(1) : '—');
+  PD.f2 = (v) => (PD.num(v) ? (Math.round(v * 100) / 100).toFixed(2) : '—');
+  /* Осадки, мм: «—» — не было, «< 0.1» — следы */
+  PD.fmm = (v) => (!PD.num(v) || v <= 0 ? '—' : v < 0.05 ? '< 0.1' : PD.f1(v));
+  PD.ok = (id) => dash.data(id).status === 'ok';
+  PD.rows = (id) => (PD.ok(id) ? dash.data(id).data || [] : []);
+  PD.place = () => dash.params().place || 'Tashkent';
+  PD.placeRow = () => PD.rows('places').find((r) => r.place === PD.place()) || null;
+  PD.info = (k) => { const r = PD.rows('info').find((x) => x.key === k); return r ? r.value : null; };
+  PD.thr = (k) => { const v = Number(PD.info(k)); return PD.info(k) != null && Number.isFinite(v) ? v : null; };
+  PD.ms = (iso) => Date.parse(iso.slice(0, 10) + 'T' + (iso.length > 10 ? iso.slice(11, 16) : '00:00') + ':00Z');
+  PD.iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+  PD.d = (iso) => new Date(PD.ms(iso));
+  /* Форматы дат: 10.11 · 10.11, вт · 10 ноября · вт, 10 ноября 2026 */
+  PD.dm = (iso) => (iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) : '—');
+  PD.dShort = (iso) => (iso ? PD.dm(iso) + ', ' + PD.TR[PD.L()].wd[PD.d(iso).getUTCDay()] : '—');
+  PD.dLong = (iso) => { if (!iso) return '—'; const d = PD.d(iso), t = PD.TR[PD.L()]; return PD.L() === 'en' ? d.getUTCDate() + ' ' + t.mon[d.getUTCMonth()] : d.getUTCDate() + ' ' + t.mon[d.getUTCMonth()]; };
+  PD.dFull = (iso) => { if (!iso) return '—'; const d = PD.d(iso), t = PD.TR[PD.L()]; return t.wd[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + t.mon[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+  /* Время конца интервала или кадра: 00:00 относится к предыдущим суткам и пишется 24:00 */
+  PD.endParts = (s) => { if (!s) return null; const hm = s.slice(11, 16); return hm === '00:00' ? {day: PD.iso(PD.ms(s) - 86400000), hm: '24:00'} : {day: s.slice(0, 10), hm}; };
+  PD.at = (s, withDay) => { const p = PD.endParts(s); return p ? (withDay ? PD.dm(p.day) + ', ' : '') + p.hm : '—'; };
+  PD.span = (end, mins, withDay) => {
+    if (!end) return '—';
+    const e = PD.endParts(end), st = new Date(PD.ms(end) - mins * 60000).toISOString(), sd = st.slice(0, 10), sh = st.slice(11, 16);
+    if (sd === e.day) return (withDay ? PD.dm(e.day) + ', ' : '') + sh + '–' + e.hm;
+    return PD.dm(sd) + ' ' + sh + ' – ' + PD.dm(e.day) + ' ' + e.hm;
+  };
+  PD.day = () => { const r = PD.rows('dday')[0]; return r ? r.date_local : null; };
+  PD.pickDay = (iso) => { if (iso) dash.setParams({day: iso}); };
+  PD.tot = () => PD.rows('ptot')[0] || null;
+  PD.dd = () => PD.rows('dday')[0] || null;
+  PD.wait = (el, id, h) => {
+    const st = dash.data(id).status;
+    if (st === 'ok') return true;
+    el.replaceChildren();
+    const p = document.createElement('div');
+    p.className = st === 'error' || st === 'missing' ? 'pd-fail' : 'dash-skeleton';
+    p.textContent = st === 'error' || st === 'missing' ? PD.tr('fail') : '';
+    if (p.className === 'dash-skeleton') p.style.minHeight = (h || 120) + 'px';
+    el.appendChild(p);
+    return false;
+  };
+  PD.none = (el) => { el.replaceChildren(); const n = document.createElement('div'); n.className = 'pd-fail'; n.textContent = PD.tr('none'); el.appendChild(n); };
+  PD.bell = (size) => {
+    const ns = 'http://www.w3.org/2000/svg', s = document.createElementNS(ns, 'svg'), u = document.createElementNS(ns, 'use');
+    s.setAttribute('width', size); s.setAttribute('height', size); s.setAttribute('aria-hidden', 'true'); u.setAttribute('href', '#pd-bell'); s.appendChild(u);
+    return s;
+  };
+  PD.tip = (el) => { const t = document.createElement('div'); t.className = 'pd-tip'; t.hidden = true; el.appendChild(t); return t; };
+  PD.tipShow = (tip, lines, W, cx, top) => {
+    tip.replaceChildren();
+    lines.forEach((t, i) => { const d = document.createElement('div'); if (i === 0) { const b = document.createElement('b'); b.textContent = t; d.appendChild(b); } else { d.textContent = t; if (t.startsWith('·')) d.className = 'm'; } tip.appendChild(d); });
+    tip.hidden = false;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(W - tw, cx + 14 + tw > W ? cx - tw - 14 : cx + 14)) + 'px';
+    tip.style.top = top + 'px';
+  };
+  PD.mark = (el, text, src, field, where) => {
+    el.replaceChildren();
+    if (text == null || text === '' || text === '—') { el.textContent = '—'; return; }
+    const s = document.createElement('span'); s.textContent = text;
+    s.setAttribute('data-source', src); s.setAttribute('data-field', field); if (where) s.setAttribute('data-where', where);
+    el.appendChild(s);
+  };
+  /* Порог мгновенной интенсивности рисуется, только если он не слишком выше данных */
+  PD.thrOn = () => {
+    const thr = PD.thr('thr_int_mmh'), fr = PD.rows('dframes');
+    const mx = d3.max(fr, (p) => p.rate_mmh) || 0;
+    return thr != null && mx > 0 && thr <= Math.max(mx * 1.5, 0.5);
+  };
+  PD.bin = (v) => (!PD.num(v) || v < 0.1 ? 0 : v < 1 ? 1 : v < 2.5 ? 2 : v < 5 ? 3 : v < 10 ? 4 : v < 20 ? 5 : 6);
+  PD.BIN = [null, '#16324d', '#1c4a75', '#22649f', '#2f7fe8', '#5aa9f0', '#9fd6ff'];
+  /* Общая геометрия двухэтажных графиков: подписи панелей в HTML стоят на 0 и 196 px */
+  PD.G = {l: 40, r: 18, t1: 26, b1: 178, t2: 224, b2: 326, H: 352};
+  PD.yAxis = (svg, y, W, ticks, fmt) => {
+    const g = svg.append('g').attr('transform', `translate(${PD.G.l},0)`)
+      .call(d3.axisLeft(y).ticks(ticks || 4).tickSize(-(W - PD.G.l - PD.G.r)).tickPadding(6).tickFormat(fmt || d3.format('~f')));
+    g.select('.domain').remove();
+    g.selectAll('.tick line').attr('stroke', 'var(--cds-chart-grid)');
+  };
+  PD.tickHalf = (y) => (y.domain()[1] <= 2 ? d3.format('.1f') : d3.format('~f'));
+
+  /* ---------- Кнопки: только слушают; состояние — классы, hidden, aria, disabled ---------- */
+  for (const b of document.querySelectorAll('#dash-root [data-lang-btn]')) b.addEventListener('click', () => dash.setParams({lang: b.getAttribute('data-lang-btn')}));
+  for (const b of document.querySelectorAll('#dash-root [data-place-btn]')) b.addEventListener('click', () => dash.setParams({place: b.getAttribute('data-place-btn')}));
+  for (const b of document.querySelectorAll('#dash-root [data-step-btn]')) b.addEventListener('click', () => dash.setParams({step: b.getAttribute('data-step-btn')}));
+  for (const b of document.querySelectorAll('#dash-root [data-day-step]')) b.addEventListener('click', () => {
+    const list = PD.rows('dsel').map((r) => r.date_local), i = list.indexOf(PD.day()), j = i + Number(b.getAttribute('data-day-step'));
+    if (i >= 0 && j >= 0 && j < list.length) PD.pickDay(list[j]);
+  });
+  for (const b of document.querySelectorAll('#dash-root [data-pick="max-day"]')) b.addEventListener('click', () => {
+    const t = PD.tot(); if (t && t.max_day_date) { PD.pickDay(t.max_day_date); const s = document.getElementById('day'); if (s && s.scrollIntoView) s.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  });
+
+  dash.onData(() => {
+    const q = (s) => document.querySelectorAll('#dash-root ' + s);
+    const set = (s, hide) => { for (const e of q(s)) e.hidden = hide; };
+    const en = PD.L() === 'en';
+    for (const r of q('.pd')) r.classList.toggle('pd-en', en);
+    for (const b of q('[data-lang-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-lang-btn') === PD.L()));
+    for (const b of q('[data-place-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-place-btn') === PD.place()));
+    const st = String([15, 30, 60].includes(Number(dash.params().step)) ? Number(dash.params().step) : 60);
+    for (const b of q('[data-step-btn]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-step-btn') === st));
+    for (const t of q('[data-step-title]')) t.hidden = t.getAttribute('data-step-title') !== st;
+    const age = dash.data('age_h');
+    set('[data-pill="stale"]', !(age.status === 'ok' && age.data != null && age.data > 24));
+    // Итоги периода
+    const t = PD.tot();
+    const wet = !!(t && t.total_mm >= 0.1);
+    set('[data-lead="wet"]', !(t && wet)); set('[data-lead="dry"]', !(t && !wet));
+    const lastData = (PD.placeRow() || {}).last_day;
+    const since = t ? t.days_since_wet : null;
+    set('[data-since="0"]', !(since === 0)); set('[data-since="n"]', since === 0);
+    const atEnd = !!(t && lastData && t.last_day === lastData);
+    set('[data-since-ago]', !atEnd); set('[data-since-before]', atEnd);
+    set('[data-dry-on]', !(t && t.dry_ongoing));
+    // Интенсивные осадки
+    const ds = dash.data('dsel');
+    const hits = ds.status === 'ok' ? ds.data.filter((r) => r.flag12 || r.flagint).length : -1;
+    set('[data-hz="none"]', hits !== 0); set('[data-hz="some"]', !(hits > 0));
+    // Выбранные сутки
+    const d = PD.dd();
+    const list = PD.rows('dsel').map((r) => r.date_local), i = d ? list.indexOf(d.date_local) : -1;
+    for (const b of q('[data-day-step]')) b.disabled = i < 0 || (b.getAttribute('data-day-step') === '-1' ? i === 0 : i === list.length - 1);
+    set('[data-partial]', !(d && d.n != null && d.n < 96));
+    const empty = !!(d && !d.wet_min);
+    set('[data-dayempty]', !empty); set('[data-dayfull]', empty);
+    set('[data-wet]', empty); set('[data-nowet]', !empty);
+    const thrKnown = PD.thr('thr_int_mmh') != null && !empty && PD.ok('dframes');
+    const on = thrKnown && PD.thrOn();
+    set('[data-thr="on"]', !on); set('[data-thr="off"]', !(thrKnown && !on));
+  });
+
+  /* ---------- Тексты, которые решают данные ---------- */
+  const T = (name, fn) => dash.draw(name, (el) => { const v = fn(); el.textContent = v == null || v === '' ? '—' : String(v); });
+  const tf = (f, fmt) => () => { const r = PD.tot(); return r ? fmt(r[f]) : null; };
+  const df = (f, fmt) => () => { const r = PD.dd(); return r ? fmt(r[f]) : null; };
+  const pf = (f, fmt) => (el) => { const r = PD.placeRow(); PD.mark(el, r ? fmt(r[f]) : null, 'places', f, 'place=' + PD.enc(PD.place())); };
+  const fix2 = (v) => (PD.num(v) ? v.toFixed(2) : null);
+  const str = (v) => (v == null ? null : String(v));
+
+  dash.draw('place-name', (el) => { const r = PD.placeRow(); const f = PD.L() === 'en' ? 'place_en' : 'place_ru'; PD.mark(el, r ? r[f] : null, 'places', f, 'place=' + PD.enc(PD.place())); });
+  dash.draw('last-frame', pf('last_frame_local', (v) => (v ? PD.dm(v) + ', ' + v.slice(11, 16) : null)));
+  dash.draw('f-lat', pf('lat', fix2)); dash.draw('f-lon', pf('lon', fix2)); dash.draw('f-elev', pf('elev_m', str));
+  dash.draw('f-nlat', pf('node_lat', fix2)); dash.draw('f-nlon', pf('node_lon', fix2));
+  dash.draw('f-first', pf('first_day', (v) => (v ? PD.dm(v) + '.' + v.slice(0, 4) : null)));
+  dash.draw('f-last', pf('last_day', (v) => (v ? PD.dm(v) + '.' + v.slice(0, 4) : null)));
+  const dt = (v) => (v && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(v) ? PD.dm(v) + '.' + v.slice(0, 4) + ', ' + v.slice(11, 16) : v);
+  T('f-frame-utc', () => dt(PD.info('latest_frame_utc')));
+  T('f-upd', () => dt(PD.info('updated_local')));
+  T('thr12', () => PD.info('thr_12h_mm'));
+  T('thrint', () => PD.info('thr_int_mmh'));
+  T('thrint-k', () => PD.info('thr_int_mmh'));
+  const ptotOf = (place) => () => { const r = PD.rows('place_tot').find((x) => x.place === place); return r ? PD.f1(r.total_mm) : null; };
+  T('ptot-t', ptotOf('Tashkent'));
+  T('ptot-c', ptotOf('Chimgan'));
+  T('lead-date', tf('max_day_date', PD.dLong));
+  T('lead-mm', tf('max_day_mm', PD.f1));
+  T('lead-share', tf('max_day_share_pct', str));
+  T('k-sum', tf('total_mm', PD.f1));
+  T('k-from', tf('first_day', PD.dm));
+  T('k-to', tf('last_day', PD.dm));
+  T('k-days', tf('days', str));
+  T('k-wet', tf('wet_days', str));
+  T('k-weth', tf('wet_hours', str));
+  T('k-lastwet', tf('last_wet_day', (v) => (v ? PD.dLong(v) : null)));
+  T('k-since', tf('days_since_wet', str));
+  T('k-maxday', tf('max_day_mm', PD.fmm));
+  T('k-maxday-at', tf('max_day_date', (v) => (v ? PD.dShort(v) : null)));
+  T('k-max1h', tf('max_1h_mm', PD.fmm));
+  T('k-max1h-at', tf('max_1h_end', (v) => (v ? PD.span(v, 60, true) : null)));
+  T('k-int', tf('max_int_mmh', (v) => (PD.num(v) && v > 0 ? PD.f1(v) : '—')));
+  T('k-int-at', tf('max_int_at', (v) => (v ? PD.at(v, true) : null)));
+  T('k-dry', tf('dry_days', str));
+  T('k-dry-from', tf('dry_from', (v) => (v ? PD.dm(v) : null)));
+  T('k-dry-to', tf('dry_to', (v) => (v ? PD.dm(v) : null)));
+  T('day-name', df('date_local', PD.dFull));
+  T('d-sum', df('sum_mm', PD.fmm));
+  T('d-n', df('n', str));
+  T('d-1h', df('max_1h_mm', PD.fmm));
+  T('d-1h-at', df('max_1h_end', (v) => (v ? PD.span(v, 60, false) : null)));
+  T('d-int', df('max_int_mmh', (v) => (PD.num(v) && v > 0 ? PD.f1(v) : '—')));
+  T('d-int-at', df('max_int_at', (v) => (v ? PD.at(v, false) : null)));
+  T('d-12h', df('max_12h_mm', PD.fmm));
+  T('d-12h-at', df('max_12h_end', (v) => (v ? PD.span(v, 720, false) : null)));
+  T('d-weth', df('wet_h', str));
+  T('d-first', df('first_wet', (v) => (v ? PD.at(v) : null)));
+  T('d-last', df('last_wet', (v) => (v ? PD.at(v) : null)));
+  T('d-dur-h', df('dur_h', str));
+  T('d-dur-m', df('dur_m', str));
+
+  /* ---------- Верхняя панель: период с датами ---------- */
+  dash.draw('per-select', (sel) => {
+    const ps = PD.rows('periods'), t = PD.TR[PD.L()];
+    const name = (p) => (p.per === 'oct' ? t.pOct : p.per === '30' ? t.p30 : p.per === '90' ? t.p90 : p.per === 'all' ? t.pAll : t.monN[Number(p.per.slice(5, 7)) - 1] + ' ' + p.per.slice(0, 4));
+    const range = (p) => (p.from === p.to ? PD.dm(p.from) : PD.dm(p.from) + '–' + PD.dm(p.to));
+    sel.replaceChildren(...ps.map((p) => new Option(name(p) + ' (' + range(p) + ')', p.per)));
+    if (!ps.length) sel.appendChild(new Option('—', ''));
+    const per = String(dash.params().per || 'oct');
+    sel.value = ps.some((p) => p.per === per) ? per : 'oct';
+    sel.onchange = () => dash.setParams({per: sel.value});
+  });
+
+  /* ---------- Строка интенсивных осадков ---------- */
+  dash.draw('hz-list', (el) => {
+    el.replaceChildren();
+    const hits = PD.rows('dsel').filter((r) => r.flag12 || r.flagint);
+    const t = PD.TR[PD.L()], MAX = 6;
+    for (const r of hits.slice(-MAX)) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pd-hz-pill';
+      b.appendChild(PD.bell(12));
+      const w = document.createElement('span'); b.appendChild(w);
+      const dd = document.createElement('b'); dd.textContent = PD.dShort(r.date_local); w.appendChild(dd);
+      const add = (txt, field, unit) => {
+        w.appendChild(document.createTextNode(' · '));
+        const s = document.createElement('span'); s.textContent = txt;
+        s.setAttribute('data-source', 'dsel'); s.setAttribute('data-field', field); s.setAttribute('data-where', 'date_local=' + PD.enc(r.date_local));
+        w.appendChild(s); w.appendChild(document.createTextNode(' ' + unit));
+      };
+      if (r.flag12) add(PD.f1(r.max_12h_mm), 'max_12h_mm', t.mm + ' ' + t.h12);
+      if (r.flagint) add(PD.f1(r.max_int_mmh), 'max_int_mmh', t.mmh);
+      b.addEventListener('click', () => PD.pickDay(r.date_local));
+      el.appendChild(b);
+    }
+    if (hits.length > MAX) { const m = document.createElement('span'); m.className = 'pd-hz-more'; m.textContent = '+' + (hits.length - MAX); el.appendChild(m); }
+  });
+
+  /* ---------- Мини-график нарастающей суммы в карточке итога ---------- */
+  dash.draw('spark', (el) => {
+    if (!PD.wait(el, 'pcum', 56)) return;
+    el.replaceChildren();
+    const pts = PD.rows('pcum').map((p) => ({x: PD.ms(p.t), y: p.cum_mm}));
+    if (pts.length < 2) return;
+    const W = Math.max(160, el.clientWidth || 300), H = 56;
+    const x = d3.scaleLinear().domain(d3.extent(pts, (p) => p.x)).range([2, W - 4]);
+    const y = d3.scaleLinear().domain([0, Math.max(0.5, d3.max(pts, (p) => p.y))]).range([H - 3, 5]);
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('aria-hidden', 'true');
+    svg.append('path').datum(pts).attr('d', d3.area().x((p) => x(p.x)).y0(y(0)).y1((p) => y(p.y))).style('fill', 'var(--c-cum)').attr('opacity', 0.14);
+    svg.append('path').datum(pts).attr('d', d3.line().x((p) => x(p.x)).y((p) => y(p.y))).attr('fill', 'none').attr('stroke-width', 2).style('stroke', 'var(--c-cum)');
+    const e = pts[pts.length - 1];
+    svg.append('circle').attr('cx', x(e.x)).attr('cy', y(e.y)).attr('r', 3).style('fill', 'var(--c-cum)');
+  });
+
+  /* ---------- Календарь: недели Пн…Вс, цвет по сумме за сутки ---------- */
+  dash.draw('calendar', (el) => {
+    if (!PD.wait(el, 'dsel', 200)) return;
+    el.replaceChildren();
+    const rows = PD.rows('dsel');
+    if (!rows.length) { PD.none(el); return; }
+    const t = PD.TR[PD.L()], by = new Map(rows.map((r) => [r.date_local, r])), sel = PD.day();
+    const first = rows[0].date_local, last = rows[rows.length - 1].date_local;
+    const f0 = PD.ms(first), start = f0 - ((PD.d(first).getUTCDay() + 6) % 7) * 86400000;
+    const l0 = PD.ms(last), end = l0 + (6 - ((PD.d(last).getUTCDay() + 6) % 7)) * 86400000;
+    let wk = null;
+    for (let ms = start; ms <= end; ms += 86400000) {
+      if (!wk || (ms - start) % (7 * 86400000) === 0) { wk = document.createElement('div'); wk.className = 'pd-cal-w'; el.appendChild(wk); }
+      const iso = PD.iso(ms), r = by.get(iso);
+      if (!r) { const o = document.createElement('div'); o.className = 'pd-cell out'; o.setAttribute('aria-hidden', 'true'); wk.appendChild(o); continue; }
+      const b = document.createElement('button'); b.type = 'button';
+      const bin = PD.bin(r.sum_mm);
+      b.className = 'pd-cell' + (bin >= 5 ? ' lt' : '') + (r.n != null && r.n < 96 ? ' part' : '');
+      if (bin) b.style.background = PD.BIN[bin];
+      b.setAttribute('aria-pressed', String(iso === sel));
+      const dn = document.createElement('span'); const dom = PD.d(iso).getUTCDate();
+      dn.className = 'd' + (dom === 1 || iso === first ? ' m1' : '');
+      dn.textContent = dom === 1 || iso === first ? dom + ' ' + t.monS[PD.d(iso).getUTCMonth()] : String(dom);
+      b.appendChild(dn);
+      const v = document.createElement('span'); v.className = 'v' + (bin ? '' : ' dry');
+      const txt = PD.fmm(r.sum_mm); v.textContent = txt;
+      if (txt !== '—' && txt !== '< 0.1') { v.setAttribute('data-source', 'dsel'); v.setAttribute('data-field', 'sum_mm'); v.setAttribute('data-where', 'date_local=' + PD.enc(iso)); }
+      b.appendChild(v);
+      if (r.flag12 || r.flagint) { const bl = document.createElement('span'); bl.className = 'bell'; bl.appendChild(PD.bell(11)); b.appendChild(bl); }
+      const lab = PD.dFull(iso) + ': ' + (txt === '—' ? t.none0 : txt + ' ' + t.mm) + (r.n != null && r.n < 96 ? ' · ' + t.frames + ' ' + r.n + ' ' + t.of : '');
+      b.title = lab; b.setAttribute('aria-label', lab);
+      b.addEventListener('click', () => PD.pickDay(iso));
+      wk.appendChild(b);
+    }
+  });
+
+  /* ---------- Период: суточные суммы и нарастающая сумма на общей оси времени ---------- */
+  dash.draw('ch-period', (el) => {
+    if (!PD.wait(el, 'dsel', PD.G.H) || !PD.wait(el, 'pcum', PD.G.H)) return;
+    el.replaceChildren();
+    const rows = PD.rows('dsel'), cum = PD.rows('pcum');
+    if (!rows.length) { PD.none(el); return; }
+    const G = PD.G, W = Math.max(280, el.clientWidth || 600), t = PD.TR[PD.L()], sel = PD.day();
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', G.H);
+    const x0 = PD.ms(rows[0].date_local), x1 = PD.ms(rows[rows.length - 1].date_local) + 86400000;
+    const x = d3.scaleUtc().domain([x0, x1]).range([G.l, W - G.r]);
+    const y1 = d3.scaleLinear().domain([0, Math.max(1, d3.max(rows, (r) => r.sum_mm || 0))]).nice(4).range([G.b1, G.t1]);
+    const cpts = cum.map((p) => ({x: PD.ms(p.t), y: p.cum_mm}));
+    const y2 = d3.scaleLinear().domain([0, Math.max(1, d3.max(cpts, (p) => p.y) || 0)]).nice(3).range([G.b2, G.t2]);
+    PD.yAxis(svg, y1, W, 4, PD.tickHalf(y1));
+    PD.yAxis(svg, y2, W, 3, PD.tickHalf(y2));
+    if (sel && by(sel)) svg.append('rect').attr('x', x(PD.ms(sel))).attr('width', Math.max(2, x(PD.ms(sel) + 86400000) - x(PD.ms(sel)))).attr('y', G.t1).attr('height', G.b2 - G.t1).attr('fill', 'var(--c-band)');
+    function by(iso) { return rows.find((r) => r.date_local === iso); }
+    const dw = x(x0 + 86400000) - x(x0), gap = Math.min(1.5, dw * 0.15);
+    svg.append('g').selectAll('rect').data(rows.filter((r) => (r.sum_mm || 0) > 0)).join('rect')
+      .attr('x', (r) => x(PD.ms(r.date_local)) + gap).attr('width', Math.max(1, dw - 2 * gap))
+      .attr('y', (r) => y1(r.sum_mm)).attr('height', (r) => Math.max(0.5, G.b1 - y1(r.sum_mm)))
+      .style('fill', (r) => (r.flag12 || r.flagint ? 'var(--c-haz)' : 'var(--c-bar)'));
+    // Подписи над заметными столбцами: самые большие суммы от 1 мм, без наложений
+    const cand = rows.filter((r) => (r.sum_mm || 0) >= 1).sort((a, b) => b.sum_mm - a.sum_mm), used = [];
+    for (const r of cand) {
+      const cx = x(PD.ms(r.date_local)) + dw / 2;
+      if (used.length >= 8 || used.some((u) => Math.abs(u - cx) < 30)) continue;
+      used.push(cx);
+      svg.append('text').attr('class', 'pd-vl').attr('x', cx).attr('y', y1(r.sum_mm) - 4).attr('text-anchor', 'middle').text(PD.f1(r.sum_mm));
+    }
+    svg.append('line').attr('x1', G.l).attr('x2', W - G.r).attr('y1', G.b1).attr('y2', G.b1).attr('stroke', 'var(--cds-chart-axis)');
+    svg.append('path').datum(cpts).attr('d', d3.area().x((p) => x(p.x)).y0(y2(0)).y1((p) => y2(p.y))).style('fill', 'var(--c-cum)').attr('opacity', 0.12);
+    svg.append('path').datum(cpts).attr('d', d3.line().x((p) => x(p.x)).y((p) => y2(p.y))).attr('fill', 'none').attr('stroke-width', 2).style('stroke', 'var(--c-cum)');
+    const e = cpts[cpts.length - 1];
+    if (e) {
+      svg.append('circle').attr('cx', x(e.x)).attr('cy', y2(e.y)).attr('r', 3.5).style('fill', 'var(--c-cum)');
+      svg.append('text').attr('class', 'pd-vl pd-vl-end').attr('x', x(e.x)).attr('y', y2(e.y) - 8).attr('text-anchor', 'end').text(PD.f1(e.y) + ' ' + t.mm);
+    }
+    const nT = Math.max(2, Math.floor((W - G.l - G.r) / 62)), per = (x1 - x0) / 86400000 / nT;
+    const iv = per <= 1 ? d3.utcDay : per <= 2 ? d3.utcDay.every(2) : per <= 7 ? d3.utcMonday : per <= 14 ? d3.utcMonday.every(2) : per <= 31 ? d3.utcMonth : d3.utcMonth.every(2);
+    svg.append('g').attr('transform', `translate(0,${G.b2})`).call(d3.axisBottom(x).ticks(iv).tickSize(4).tickFormat(d3.utcFormat('%d.%m')))
+      .call((g) => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'));
+    // Общий курсор и одна подсказка на оба графика
+    const tip = PD.tip(el);
+    const rule = svg.append('line').attr('y1', G.t1).attr('y2', G.b2).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '3 3').attr('visibility', 'hidden');
+    const hd = svg.append('rect').attr('y', G.t1).attr('height', G.b1 - G.t1).attr('fill', 'none').attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
+    const dot = svg.append('circle').attr('r', 3.5).style('fill', 'var(--c-cum)').attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5).attr('visibility', 'hidden');
+    const at = (ev) => { const ms = Math.min(x1 - 1, Math.max(x0, x.invert(d3.pointer(ev)[0]).getTime())); return ms; };
+    svg.append('rect').attr('x', G.l).attr('y', G.t1).attr('width', W - G.l - G.r).attr('height', G.b2 - G.t1).attr('fill', 'transparent').style('cursor', 'pointer')
+      .on('pointermove', (ev) => {
+        const ms = at(ev), iso = PD.iso(ms), r = by(iso);
+        const hEnd = Math.ceil((ms + 1) / 3600000) * 3600000, c = cpts.find((p) => p.x === hEnd) || cpts[cpts.length - 1];
+        rule.attr('x1', x(ms)).attr('x2', x(ms)).attr('visibility', 'visible');
+        hd.attr('x', x(PD.ms(iso))).attr('width', Math.max(1, dw)).attr('visibility', 'visible');
+        if (c) dot.attr('cx', x(c.x)).attr('cy', y2(c.y)).attr('visibility', 'visible');
+        const he = new Date(hEnd).toISOString(), hm = he.slice(11, 16) === '00:00' ? '24:00' : he.slice(11, 16);
+        PD.tipShow(tip, [PD.dFull(iso), t.day + ': ' + (r ? PD.fmm(r.sum_mm) + (PD.fmm(r.sum_mm) === '—' ? '' : ' ' + t.mm) : '—'),
+          t.cumTo + ' ' + hm + ': ' + (c ? PD.f1(c.y) + ' ' + t.mm : '—'), ...(r && r.n != null && r.n < 96 ? ['· ' + t.frames + ' ' + r.n + ' ' + t.of] : [])], W, x(ms), G.t1);
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); hd.attr('visibility', 'hidden'); dot.attr('visibility', 'hidden'); })
+      .on('click', (ev) => PD.pickDay(PD.iso(at(ev))));
+  });
+
+  /* ---------- Выбранные сутки: суммы по интервалам и мгновенная интенсивность на оси 00:00–24:00 ---------- */
+  dash.draw('ch-day', (el) => {
+    if (!PD.wait(el, 'dagg', PD.G.H) || !PD.wait(el, 'dframes', PD.G.H)) return;
+    el.replaceChildren();
+    const agg = PD.rows('dagg'), fr = PD.rows('dframes'), d = PD.day();
+    if (!fr.length || !d) { PD.none(el); return; }
+    const G = PD.G, W = Math.max(280, el.clientWidth || 600), t = PD.TR[PD.L()];
+    const step = agg.length ? agg[0].step : 60;
+    const d0 = PD.ms(d), d1 = d0 + 86400000;
+    const x = d3.scaleUtc().domain([d0, d1]).range([G.l, W - G.r]);
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', G.H);
+    const y1 = d3.scaleLinear().domain([0, Math.max(step === 15 ? 0.1 : 0.2, d3.max(agg, (r) => r.sum_mm || 0))]).nice(4).range([G.b1, G.t1]);
+    const pts = fr.map((p) => ({x: PD.ms(p.local), y: p.rate_mmh}));
+    const thr = PD.thr('thr_int_mmh'), on = PD.thrOn();
+    let ymax = Math.max(0.5, d3.max(pts, (p) => p.y) || 0);
+    if (on) ymax = Math.max(ymax, thr);
+    const y2 = d3.scaleLinear().domain([0, ymax]).nice(3).range([G.b2, G.t2]);
+    PD.yAxis(svg, y1, W, 4, PD.tickHalf(y1));
+    PD.yAxis(svg, y2, W, 3, PD.tickHalf(y2));
+    const gap = Math.min(1.5, (x(d0 + step * 60000) - x(d0)) * 0.12);
+    const bx = (r) => x(PD.ms(r.start_local)) + gap, bw = (r) => Math.max(1, x(PD.ms(r.end_local)) - x(PD.ms(r.start_local)) - 2 * gap);
+    svg.append('g').selectAll('rect').data(agg.filter((r) => (r.sum_mm || 0) > 0)).join('rect')
+      .attr('x', bx).attr('width', bw).attr('y', (r) => y1(r.sum_mm)).attr('height', (r) => Math.max(0.5, G.b1 - y1(r.sum_mm)))
+      .style('fill', (r) => (thr != null && r.max_mmh >= thr ? 'var(--c-haz)' : 'var(--c-bar)'));
+    const cand = agg.filter((r) => (r.sum_mm || 0) >= 0.1).sort((a, b) => b.sum_mm - a.sum_mm), used = [];
+    for (const r of cand) {
+      const cx = bx(r) + bw(r) / 2;
+      if (used.length >= 6 || used.some((u) => Math.abs(u - cx) < 30)) continue;
+      used.push(cx);
+      svg.append('text').attr('class', 'pd-vl').attr('x', cx).attr('y', y1(r.sum_mm) - 4).attr('text-anchor', 'middle').text(PD.f1(r.sum_mm));
+    }
+    svg.append('line').attr('x1', G.l).attr('x2', W - G.r).attr('y1', G.b1).attr('y2', G.b1).attr('stroke', 'var(--cds-chart-axis)');
+    if (on) svg.append('line').attr('x1', G.l).attr('x2', W - G.r).attr('y1', y2(thr)).attr('y2', y2(thr)).attr('stroke', 'var(--c-haz)').attr('stroke-dasharray', '5 4');
+    const ok = pts.filter((p) => p.y != null);
+    svg.append('path').datum(pts).attr('d', d3.area().defined((p) => p.y != null).x((p) => x(p.x)).y0(y2(0)).y1((p) => y2(p.y))).style('fill', 'var(--c-int)').attr('opacity', 0.16);
+    svg.append('path').datum(pts).attr('d', d3.line().defined((p) => p.y != null).x((p) => x(p.x)).y((p) => y2(p.y))).attr('fill', 'none').attr('stroke-width', 2).style('stroke', 'var(--c-int)');
+    const nT = (W - G.l - G.r) / 8 >= 48 ? 3 : 6;
+    svg.append('g').attr('transform', `translate(0,${G.b2})`)
+      .call(d3.axisBottom(x).tickValues(d3.range(0, 25, nT).map((h) => d0 + h * 3600000)).tickSize(4).tickFormat((v) => (+v === d1 ? '24:00' : d3.utcFormat('%H:%M')(v))))
+      .call((g) => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'));
+    const tip = PD.tip(el);
+    const rule = svg.append('line').attr('y1', G.t1).attr('y2', G.b2).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '3 3').attr('visibility', 'hidden');
+    const hb = svg.append('rect').attr('y', G.t1).attr('height', G.b1 - G.t1).attr('fill', 'none').attr('stroke', 'var(--cds-chart-reference)').attr('visibility', 'hidden');
+    const dot = svg.append('circle').attr('r', 3.5).style('fill', 'var(--c-int)').attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5).attr('visibility', 'hidden');
+    svg.append('rect').attr('x', G.l).attr('y', G.t1).attr('width', W - G.l - G.r).attr('height', G.b2 - G.t1).attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const ms = Math.min(d1, Math.max(d0 + 1, x.invert(d3.pointer(ev)[0]).getTime()));
+        const iv = agg.find((r) => PD.ms(r.start_local) < ms && ms <= PD.ms(r.end_local));
+        const k = Math.max(0, Math.min(fr.length - 1, Math.round((ms - d0) / 900000) - 1)), p = pts[k];
+        rule.attr('x1', x(p.x)).attr('x2', x(p.x)).attr('visibility', 'visible');
+        if (iv) hb.attr('x', bx(iv)).attr('width', bw(iv)).attr('visibility', 'visible');
+        if (p.y != null) dot.attr('cx', x(p.x)).attr('cy', y2(p.y)).attr('visibility', 'visible'); else dot.attr('visibility', 'hidden');
+        const lines = [iv ? PD.span(iv.end_local, step, false) : '—'];
+        const z = (v, u) => (!PD.num(v) || v <= 0 ? '—' : PD.f2(v) + ' ' + u);
+        if (iv) { lines.push(t.ivl + ': ' + z(iv.sum_mm, t.mm)); lines.push(t.mean + ': ' + z(iv.mean_mmh, t.mmh)); }
+        lines.push(t.inst + ' ' + PD.at(fr[k].local) + ': ' + z(p.y, t.mmh));
+        PD.tipShow(tip, lines, W, x(p.x), G.t1);
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); hb.attr('visibility', 'hidden'); dot.attr('visibility', 'hidden'); });
+    if (!ok.length) PD.none(el);
+  });
+
+  /* ---------- Таблицы ---------- */
+  dash.draw('tb-days', (tb) => {
+    tb.replaceChildren();
+    if (!PD.ok('dsel')) return;
+    const sel = PD.day();
+    for (const r of PD.rows('dsel')) {
+      const tr = document.createElement('tr'); tr.setAttribute('data-key', PD.enc(r.date_local));
+      tr.className = (r.date_local === sel ? 'sel' : '') + (r.flag12 || r.flagint ? ' hit' : '');
+      const s = PD.fmm(r.sum_mm);
+      const cells = [[PD.dShort(r.date_local), 'l'], [s, s === '—' ? 'dry' : ''], [PD.f1(r.cum_mm)], [PD.fmm(r.max_1h_mm)], [PD.num(r.max_int_mmh) && r.max_int_mmh > 0 ? PD.f1(r.max_int_mmh) : '—'], [PD.fmm(r.max_12h_mm)], [String(r.wet_h ?? '—')], [String(r.n ?? '—')]];
+      for (const [x, c] of cells) { const td = document.createElement('td'); td.textContent = x; if (c) td.className = c; tr.appendChild(td); }
+      tr.style.cursor = 'pointer'; tr.addEventListener('click', () => PD.pickDay(r.date_local));
+      tb.appendChild(tr);
+    }
+  });
+  dash.draw('tb-day', (tb) => {
+    tb.replaceChildren();
+    if (!PD.ok('dagg')) return;
+    for (const r of PD.rows('dagg')) {
+      const tr = document.createElement('tr'); tr.setAttribute('data-key', PD.enc(r.end_local));
+      const z = (v, f) => (!PD.num(v) ? '—' : v === 0 ? '—' : f(v));
+      const cells = [[PD.span(r.end_local, r.step, false), 'l'], [z(r.sum_mm, PD.f2)], [z(r.mean_mmh, PD.f2)], [z(r.max_mmh, PD.f2)], [PD.f2(r.cum_mm)], [String(r.n)]];
+      for (const [x, c] of cells) { const td = document.createElement('td'); td.textContent = x; if (c) td.className = c; if (x === '—') td.classList.add('dry'); tr.appendChild(td); }
+      tb.appendChild(tr);
+    }
+  });
+</script>
 </div>
 </body>
 </html>
