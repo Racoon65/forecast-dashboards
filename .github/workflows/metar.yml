@@ -1,0 +1,117 @@
+name: METAR UZTT
+
+# Сбор сводок METAR аэропорта Ташкент (UZTT) в metar/data.json
+# Источник: aviationweather.gov (NOAA), запасной — tgftp.ncep.noaa.gov
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: metar
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch METAR
+        env:
+          STATION: UZTT
+          KEEP_HOURS: "72"
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          from datetime import datetime, timedelta, timezone
+
+          st = os.environ["STATION"]
+          keep = int(os.environ["KEEP_HOURS"])
+          path = "metar/data.json"
+          now = datetime.now(timezone.utc)
+
+          def get(url):
+              req = urllib.request.Request(url, headers={"User-Agent": "forecast-dashboards metar (github.com/Racoon65)"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return r.read().decode("utf-8", "replace")
+
+          def obs_time(raw):
+              m = re.search(r"\b(\d{2})(\d{2})(\d{2})Z\b", raw)
+              if not m:
+                  return None
+              d, h, mi = map(int, m.groups())
+              # месяц/год берём по текущей дате (сводка за прошлый месяц — сдвиг назад)
+              y, mo = now.year, now.month
+              if d > now.day + 1:
+                  mo -= 1
+                  if mo == 0:
+                      y, mo = y - 1, 12
+              try:
+                  return datetime(y, mo, d, h, mi, tzinfo=timezone.utc)
+              except ValueError:
+                  return None
+
+          new = []
+          try:
+              js = json.loads(get(f"https://aviationweather.gov/api/data/metar?ids={st}&hours=6&format=json"))
+              for o in js:
+                  raw = (o.get("rawOb") or "").strip()
+                  t = o.get("reportTime")
+                  if raw and t:
+                      new.append({"t": t.replace(".000Z", "Z"), "raw": raw})
+          except Exception as e:
+              print("aviationweather.gov failed:", e)
+          if not new:
+              try:
+                  txt = get(f"https://tgftp.ncep.noaa.gov/data/observations/metar/stations/{st}.TXT")
+                  raw = txt.strip().splitlines()[-1].strip()
+                  t = obs_time(raw)
+                  if t:
+                      new.append({"t": t.strftime("%Y-%m-%dT%H:%M:%SZ"), "raw": raw})
+              except Exception as e:
+                  print("tgftp failed:", e)
+
+          try:
+              with open(path, encoding="utf-8") as f:
+                  data = json.load(f)
+          except Exception:
+              data = {"station": st, "obs": []}
+
+          byt = {o["t"]: o for o in data.get("obs", [])}
+          for o in new:
+              byt[o["t"]] = o  # исправленная сводка (COR) заменяет прежнюю
+          cut = now - timedelta(hours=keep)
+          obs = sorted(
+              (o for o in byt.values()
+               if datetime.fromisoformat(o["t"].replace("Z", "+00:00")) >= cut),
+              key=lambda o: o["t"])
+
+          if obs == data.get("obs"):
+              print("no new reports")
+          else:
+              out = {"station": st, "name": "Ташкент, международный аэропорт",
+                     "source": "aviationweather.gov (NOAA)",
+                     "updated": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "obs": obs}
+              os.makedirs("metar", exist_ok=True)
+              with open(path, "w", encoding="utf-8") as f:
+                  json.dump(out, f, ensure_ascii=False, indent=0)
+              print(len(obs), "reports, last:", obs[-1]["raw"] if obs else "-")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "metar-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add metar/data.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "METAR UZTT $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep 5
+          done
+          exit 1
