@@ -1,14 +1,18 @@
 name: METAR UZTT
 
-# Сбор сводок METAR аэропорта Ташкент (UZTT) в metar/data.json
-# Источник: aviationweather.gov (NOAA), запасной — tgftp.ncep.noaa.gov
+# Сбор сводок METAR аэропорта Ташкент (UZTT) в metar/data.json.
+# Источник: aviationweather.gov (NOAA), запасной — tgftp.ncep.noaa.gov.
+# Один запуск работает ~5 ч 45 мин и каждые 5 минут проверяет новые сводки,
+# в конце сам запускает следующий (workflow_dispatch). Расписание раз в час —
+# страховка на случай, если цепочка оборвётся (лишний запуск ждёт в очереди).
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: metar
@@ -17,16 +21,19 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 355
+    env:
+      STATION: UZTT
+      KEEP_HOURS: "72"
+      LOOP_MIN: "345"
+      STEP_SEC: "300"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch METAR
-        env:
-          STATION: UZTT
-          KEEP_HOURS: "72"
+      - name: Write collector
         run: |
-          python3 - <<'PY'
+          mkdir -p /tmp/metar
+          cat > /tmp/metar/collect.py <<'PY'
           import json, os, re, urllib.request
           from datetime import datetime, timedelta, timezone
 
@@ -103,15 +110,32 @@ jobs:
               print(len(obs), "reports, last:", obs[-1]["raw"] if obs else "-")
           PY
 
-      - name: Commit
+      - name: Collect loop
         run: |
           git config user.name "metar-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add metar/data.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "METAR UZTT $(date -u +%Y-%m-%dT%H:%MZ)"
-          for i in 1 2 3; do
-            git pull --rebase --quiet && git push && exit 0
-            sleep 5
+          end=$((SECONDS + LOOP_MIN * 60))
+          while [ $SECONDS -lt $end ]; do
+            git pull --rebase --quiet || true
+            python3 /tmp/metar/collect.py || echo "collect failed"
+            git add metar/data.json
+            if ! git diff --cached --quiet; then
+              git commit -q -m "METAR UZTT $(date -u +%Y-%m-%dT%H:%MZ)"
+              for i in 1 2 3; do
+                git pull --rebase --quiet && git push --quiet && break
+                sleep 5
+              done
+            fi
+            left=$((end - SECONDS))
+            [ $left -le 0 ] && break
+            sleep $(( left < STEP_SEC ? left : STEP_SEC ))
           done
-          exit 1
+
+      - name: Start next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/metar.yml/dispatches" \
+            -d '{"ref":"${{ github.ref_name }}"}' -w "HTTP %{http_code}\n"
