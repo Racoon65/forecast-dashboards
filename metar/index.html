@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Погода сейчас: Ташкент (METAR)</title>
+<style>
+/* Тёмная страница в одном стиле с дашбордами WeatherNext, ECMWF, PARDIG и осадков на водосборы. */
+:root { color-scheme: dark;
+  --bg: #0b1219; --panel: #15202b; --line: #2a3644; --fg: #f0efec; --mut: #9aa3ad;
+  --grid: #1f2b38; --axis: #4a5868; --acc: #81cffe; --main: #5aa9f0; --td: #9fd9a8; --gust: #f0a35a; --haz: #ff8a5c;
+  --ok: #2fbf71; --warn: #e0c050;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: Georgia, "Times New Roman", serif; }
+* { box-sizing: border-box; min-width: 0; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--sans); font-variant-numeric: tabular-nums; overflow-x: clip; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 20px max(16px, 3vw) 40px; display: flex; flex-direction: column; gap: 26px; }
+:root:not(.en) [data-l="en"], :root.en [data-l="ru"] { display: none !important; }
+a { color: var(--acc); text-underline-offset: 2px; }
+h1 { font: 400 clamp(26px, 4vw, 38px)/1.1 var(--serif); margin: 0; text-wrap: balance; }
+h2 { font-size: 18px; font-weight: 600; margin: 0; }
+h3 { font-size: 14px; font-weight: 600; margin: 0; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.meta { color: var(--mut); font-size: 13px; margin: 6px 0 0; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+.seg button { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 14px; min-height: 34px; background: transparent; color: var(--mut); border: 0; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; margin-left: 6px; vertical-align: 1px; }
+.pill.stale { background: var(--warn); color: #1a1406; }
+.pill.cat { border: 1px solid currentColor; }
+/* Текущая сводка */
+.now { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr); gap: 16px; }
+@media (max-width: 760px) { .now { grid-template-columns: minmax(0, 1fr); } }
+.hero { background: linear-gradient(180deg, #1c2b3a 0%, #131e28 100%); border: 1px solid #2c3b4b; border-radius: 12px; padding: 18px 20px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 8px 18px -8px rgba(0,0,0,.7); display: flex; flex-direction: column; gap: 10px; }
+.hero-row { display: flex; align-items: center; gap: 16px; }
+.hero svg.ico { width: 76px; height: 76px; flex-shrink: 0; }
+.temp { font: 400 clamp(54px, 9vw, 78px)/1 var(--serif); white-space: nowrap; }
+.temp small { font-size: .42em; color: var(--mut); }
+.wx { font-size: 18px; font-weight: 600; }
+.sub { color: var(--mut); font-size: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.tile .k { color: var(--mut); font-size: 12px; }
+.tile .v { font-size: 22px; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.tile .v small { font-size: 13px; font-weight: 400; color: var(--mut); }
+.tile .x { color: var(--mut); font-size: 12px; }
+.raw { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.raw code { font: 14px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; flex: 1 1 300px; }
+.btn { font: inherit; font-size: 13px; padding: 6px 12px; min-height: 34px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: #4a5e72; }
+.notes { margin: 0; padding-left: 1.2em; color: var(--mut); line-height: 1.5; display: flex; flex-direction: column; gap: 4px; max-width: 90ch; }
+.trend { margin: 0; padding: 6px 10px; border-left: 3px solid var(--acc); background: rgba(129,207,254,.08); border-radius: 0 4px 4px 0; max-width: 90ch; }
+/* Графики */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--mut); }
+.sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.fig { position: relative; height: 190px; }
+.fig svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.fig text { fill: var(--mut); font: 11px var(--sans); }
+.tip { position: absolute; pointer-events: none; background: #1b2835; border: 1px solid #33414f; box-shadow: 0 4px 14px rgba(0,0,0,.5);
+  border-radius: 6px; padding: 6px 9px; font-size: 12px; white-space: nowrap; z-index: 3; }
+.tip .m { color: var(--mut); }
+/* Таблица */
+details.fold { border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; }
+details.fold > summary { cursor: pointer; font-weight: 600; padding: 4px 0; min-height: 30px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { color: var(--mut); font-weight: 600; }
+td.l, th.l { text-align: left; }
+td.raw-c { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--mut); white-space: normal; min-width: 260px; text-align: left; }
+.foot { border-top: 1px solid var(--line); padding-top: 14px; font-size: 12px; color: var(--mut); line-height: 1.6; }
+.foot p { margin: 0 0 6px; max-width: 95ch; }
+.err { color: var(--haz); }
+@media (max-width: 520px) { .top { flex-direction: column-reverse; align-items: flex-end; } .top > div:first-child { align-self: stretch; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="top">
+      <div>
+        <h1><span data-l="ru">Погода сейчас: Ташкент, аэропорт</span><span data-l="en" lang="en">Weather now: Tashkent airport</span></h1>
+        <p class="meta" id="meta">—</p>
+      </div>
+      <div class="seg" role="group" aria-label="Язык / Language">
+        <button type="button" data-lang="ru" aria-pressed="true">RU</button><button type="button" data-lang="en" aria-pressed="false" lang="en">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="now" aria-live="polite">
+    <div class="hero">
+      <div class="hero-row"><svg class="ico" viewBox="0 0 24 24" id="ico" aria-hidden="true"></svg><div class="temp" id="temp">—</div></div>
+      <div class="wx" id="wx">—</div>
+      <div class="sub" id="feel"></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <div class="raw"><code id="raw">—</code><button type="button" class="btn" id="copy"><span data-l="ru">Копировать</span><span data-l="en" lang="en">Copy</span></button></div>
+  <p class="trend" id="trend" hidden></p>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <h2><span data-l="ru">Последние 24 часа</span><span data-l="en" lang="en">Last 24 hours</span></h2>
+    <div class="grid">
+      <div class="card"><h3><span data-l="ru">Температура и точка росы, °C</span><span data-l="en" lang="en">Temperature and dew point, °C</span></h3>
+        <div class="keys"><span><i class="sw" style="background:var(--main)"></i><span data-l="ru">температура</span><span data-l="en">temperature</span></span><span><i class="sw" style="background:var(--td)"></i><span data-l="ru">точка росы</span><span data-l="en">dew point</span></span></div>
+        <div class="fig" id="c-t"></div></div>
+      <div class="card"><h3><span data-l="ru">Ветер, м/с (стрелка — куда дует)</span><span data-l="en" lang="en">Wind, m/s (arrow — where it blows to)</span></h3>
+        <div class="keys"><span><i class="sw" style="background:var(--main)"></i><span data-l="ru">средняя скорость</span><span data-l="en">mean speed</span></span><span><i class="sw" style="background:var(--gust)"></i><span data-l="ru">порывы</span><span data-l="en">gusts</span></span></div>
+        <div class="fig" id="c-w"></div></div>
+      <div class="card"><h3><span data-l="ru">Давление QNH, гПа</span><span data-l="en" lang="en">QNH pressure, hPa</span></h3>
+        <div class="fig" id="c-p"></div></div>
+      <div class="card"><h3><span data-l="ru">Видимость, км и относительная влажность</span><span data-l="en" lang="en">Visibility, km, and relative humidity</span></h3>
+        <div class="keys"><span><i class="sw" style="background:var(--main)"></i><span data-l="ru">видимость (10 км — 10 км и более)</span><span data-l="en">visibility (10 km means 10 km or more)</span></span><span><i class="sw" style="background:var(--td)"></i><span data-l="ru">влажность, % (правая шкала)</span><span data-l="en">humidity, % (right scale)</span></span></div>
+        <div class="fig" id="c-v"></div></div>
+    </div>
+  </section>
+
+  <details class="fold">
+    <summary><span data-l="ru">Все сводки за 24 часа</span><span data-l="en" lang="en">All reports for 24 hours</span></summary>
+    <div class="scroll"><table><thead><tr>
+      <th class="l"><span data-l="ru">Время</span><span data-l="en">Time</span></th><th>T, °C</th><th>Td, °C</th><th><span data-l="ru">Вл., %</span><span data-l="en">RH, %</span></th>
+      <th class="l"><span data-l="ru">Ветер</span><span data-l="en">Wind</span></th><th><span data-l="ru">Вид., км</span><span data-l="en">Vis, km</span></th><th>QNH</th>
+      <th class="l"><span data-l="ru">Явления, облака</span><span data-l="en">Weather, clouds</span></th><th class="l">METAR</th></tr></thead><tbody id="tbl"></tbody></table></div>
+  </details>
+
+  <details class="fold">
+    <summary><span data-l="ru">Как получены цифры</span><span data-l="en" lang="en">How the numbers are made</span></summary>
+    <ul class="notes" data-l="ru">
+      <li>METAR — стандартная авиационная сводка о фактической погоде на аэродроме. Аэропорт Ташкент (ICAO UZTT, прежний код UTTT, высота 429 м) выпускает её каждые 30 минут, в :00 и :30 UTC (в :05 и :35 по Ташкенту — с учётом передачи — сводка появляется в сети).</li>
+      <li>Сводки собирает GitHub Actions каждые 10 минут с сервера Aviation Weather Center (NOAA, aviationweather.gov) и записывает в data.json; хранятся последние 72 часа. Страница перечитывает файл каждые 5 минут.</li>
+      <li>Ветер в сводке — в узлах; переведён в м/с (1 уз = 0.514 м/с). Направление — откуда дует, осреднение за 10 минут; порывы — если указаны. «Переменный» — направление меняется, скорость слабая.</li>
+      <li>CAVOK — видимость 10 км и более, нет облаков ниже 1500 м и кучево-дождевых, нет явлений погоды. NSC — нет значимой облачности. На графике видимость 10 км означает «10 км и более».</li>
+      <li>Высота облаков — над аэродромом. Влажность рассчитана по температуре и точке росы (формула Магнуса); в сводке они целые, поэтому влажность приближённая. Ощущаемая температура: при T ≤ 10 °C и ветре > 1.3 м/с — индекс ветрового охлаждения, при T ≥ 27 °C — индекс жары, иначе равна температуре.</li>
+      <li>Время на странице — ташкентское (UTC+5). Сводка старше 75 минут помечается как устаревшая.</li>
+    </ul>
+    <ul class="notes" data-l="en" lang="en">
+      <li>METAR is the standard aviation report of actual weather at an aerodrome. Tashkent airport (ICAO UZTT, formerly UTTT, elevation 429 m) issues it every 30 minutes, at :00 and :30 UTC.</li>
+      <li>GitHub Actions collects the reports every 10 minutes from the Aviation Weather Center (NOAA, aviationweather.gov) and writes them to data.json; the last 72 hours are kept. The page re-reads the file every 5 minutes.</li>
+      <li>Wind is reported in knots and converted to m/s (1 kt = 0.514 m/s). Direction is where the wind blows from, 10-minute mean; gusts when reported. “Variable” means the direction keeps changing at low speed.</li>
+      <li>CAVOK — visibility 10 km or more, no cloud below 1500 m and no cumulonimbus, no weather. NSC — no significant cloud. On the chart 10 km means “10 km or more”.</li>
+      <li>Cloud heights are above the aerodrome. Humidity is computed from temperature and dew point (Magnus formula); they are reported as whole degrees, so humidity is approximate. Feels-like: wind chill at T ≤ 10 °C and wind > 1.3 m/s, heat index at T ≥ 27 °C, otherwise the air temperature.</li>
+      <li>Times are Tashkent time (UTC+5). A report older than 75 minutes is flagged as out of date.</li>
+    </ul>
+  </details>
+
+  <footer class="foot">
+    <p data-l="ru">Источник: сводки METAR аэропорта Ташкент через <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center (NOAA)</a>. Это фактические наблюдения, не прогноз; для полётов используйте официальные источники.</p>
+    <p data-l="en" lang="en">Source: Tashkent airport METAR reports via the <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center (NOAA)</a>. These are observations, not a forecast; use official sources for flight planning.</p>
+  </footer>
+</div>
+
+<script>
+{
+const KT = 0.514444, TZ = 5 * 3600e3;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+let lang = 'ru';
+try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en') lang = 'en'; } catch (e) {}
+const T = {
+  ru: {dirs: ['С', 'ССВ', 'СВ', 'ВСВ', 'В', 'ВЮВ', 'ЮВ', 'ЮЮВ', 'Ю', 'ЮЮЗ', 'ЮЗ', 'ЗЮЗ', 'З', 'ЗСЗ', 'СЗ', 'ССЗ'],
+    calm: 'штиль', vrb: 'переменный', ms: 'м/с', km: 'км', m: 'м', hpa: 'гПа', gust: 'порывы', from: 'от', to: 'до',
+    wind: 'Ветер', vis: 'Видимость', cloud: 'Облачность', press: 'Давление QNH', rh: 'Влажность', td: 'Точка росы', rvr: 'Дальность видимости на ВПП',
+    feel: 'Ощущается как', cavok: 'Видимость и облачность в норме (CAVOK)', clear: 'Без явлений погоды', nsc: 'нет значимой облачности',
+    ncd: 'облаков нет', vv: 'вертикальная видимость', ago: (m) => m < 60 ? m + ' мин назад' : Math.floor(m / 60) + ' ч ' + (m % 60) + ' мин назад',
+    obs: 'Сводка за', upd: 'данные обновлены', stale: 'Сводка устарела', loadErr: 'Не удалось загрузить данные', more: 'и более', less: 'менее',
+    cover: {FEW: 'незначительная', SCT: 'рассеянная', BKN: 'значительная', OVC: 'сплошная'}, cb: 'кучево-дождевые', tcu: 'мощно-кучевые',
+    trend: {NOSIG: 'В ближайшие 2 часа существенных изменений не ожидается.', BECMG: 'Ожидается изменение:', TEMPO: 'Временами:'},
+    rvrT: {U: 'растёт', D: 'уменьшается', N: 'без изменений'}, rwy: 'ВПП', ceil: 'нижняя граница', copied: 'Скопировано', delta: 'за 3 ч',
+    wxw: {VC: 'вблизи', MI: 'поземный', BC: 'клочья', PR: 'частичный', DR: 'позёмок', BL: 'метель', SH: 'ливневый', TS: 'гроза', FZ: 'переохлаждённый',
+      DZ: 'морось', RA: 'дождь', SN: 'снег', SG: 'снежные зёрна', IC: 'ледяные иглы', PL: 'ледяной дождь', GR: 'град', GS: 'крупа', UP: 'осадки',
+      BR: 'дымка', FG: 'туман', FU: 'дым', VA: 'вулканический пепел', DU: 'пыль', SA: 'песок', HZ: 'мгла', PO: 'пыльные вихри', SQ: 'шквал',
+      FC: 'смерч', SS: 'песчаная буря', DS: 'пыльная буря', '-': 'слабый', '+': 'сильный', RE: 'недавно'}},
+  en: {dirs: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'],
+    calm: 'calm', vrb: 'variable', ms: 'm/s', km: 'km', m: 'm', hpa: 'hPa', gust: 'gusts', from: 'from', to: 'to',
+    wind: 'Wind', vis: 'Visibility', cloud: 'Clouds', press: 'QNH pressure', rh: 'Humidity', td: 'Dew point', rvr: 'Runway visual range',
+    feel: 'Feels like', cavok: 'Ceiling and visibility OK (CAVOK)', clear: 'No significant weather', nsc: 'no significant cloud',
+    ncd: 'no cloud', vv: 'vertical visibility', ago: (m) => m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min ago',
+    obs: 'Report of', upd: 'data updated', stale: 'Report is out of date', loadErr: 'Failed to load data', more: 'or more', less: 'less than',
+    cover: {FEW: 'few', SCT: 'scattered', BKN: 'broken', OVC: 'overcast'}, cb: 'cumulonimbus', tcu: 'towering cumulus',
+    trend: {NOSIG: 'No significant change expected in the next 2 hours.', BECMG: 'Becoming:', TEMPO: 'Temporarily:'},
+    rvrT: {U: 'rising', D: 'falling', N: 'no change'}, rwy: 'RWY', ceil: 'base', copied: 'Copied', delta: 'in 3 h',
+    wxw: {VC: 'in the vicinity', MI: 'shallow', BC: 'patches', PR: 'partial', DR: 'drifting', BL: 'blowing', SH: 'showers', TS: 'thunderstorm', FZ: 'freezing',
+      DZ: 'drizzle', RA: 'rain', SN: 'snow', SG: 'snow grains', IC: 'ice crystals', PL: 'ice pellets', GR: 'hail', GS: 'small hail', UP: 'precipitation',
+      BR: 'mist', FG: 'fog', FU: 'smoke', VA: 'volcanic ash', DU: 'dust', SA: 'sand', HZ: 'haze', PO: 'dust whirls', SQ: 'squall',
+      FC: 'funnel cloud', SS: 'sandstorm', DS: 'duststorm', '-': 'light', '+': 'heavy', RE: 'recent'}}};
+const tr = () => T[lang];
+
+/* ---------- Разбор METAR ---------- */
+const WXRE = /^(RE)?([-+]|VC)?(MI|BC|PR|DR|BL|SH|TS|FZ)?((?:DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PO|SQ|FC|SS|DS)+)?$/;
+function parse(raw, t) {
+  const o = {raw, t: new Date(t), wx: [], re: [], clouds: [], rvr: [], trend: null};
+  const tok = raw.trim().split(/\s+/);
+  let i = 0;
+  if (tok[i] === 'METAR' || tok[i] === 'SPECI') o.type = tok[i++];
+  o.st = tok[i++];
+  if (/^\d{6}Z$/.test(tok[i])) i++;
+  for (; i < tok.length; i++) {
+    const s = tok[i];
+    let m;
+    if (s === 'RMK') break;
+    if (s === 'NOSIG' || s === 'BECMG' || s === 'TEMPO') { o.trend = tok.slice(i, tok.indexOf('RMK') > i ? tok.indexOf('RMK') : tok.length).join(' '); break; }
+    if (s === 'AUTO' || s === 'COR') { o[s.toLowerCase()] = true; continue; }
+    if ((m = s.match(/^(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)$/))) {
+      const k = m[4] === 'MPS' ? 1 : KT;
+      o.wdir = m[1] === 'VRB' ? null : +m[1]; o.vrb = m[1] === 'VRB'; o.wspd = +m[2] * k; o.wgst = m[3] ? +m[3] * k : null; continue; }
+    if ((m = s.match(/^(\d{3})V(\d{3})$/))) { o.wvar = [+m[1], +m[2]]; continue; }
+    if (s === 'CAVOK') { o.cavok = true; o.vis = 10000; continue; }
+    if ((m = s.match(/^(\d{4})(NDV)?$/)) && o.vis == null && !o.cavok) { o.vis = +m[1] === 9999 ? 10000 : +m[1]; continue; }
+    if ((m = s.match(/^(\d{4})(N|NE|E|SE|S|SW|W|NW)$/))) { o.visMin = +m[1]; continue; }
+    if ((m = s.match(/^R(\d{2}[LCR]?)\/([PM]?\d{4})(?:V([PM]?\d{4}))?(FT)?([UDN])?$/))) { o.rvr.push({rwy: m[1], v: m[2], v2: m[3], tend: m[5]}); continue; }
+    if ((m = s.match(/^(FEW|SCT|BKN|OVC)(\d{3}|\/\/\/)(CB|TCU|\/\/\/)?$/))) { o.clouds.push({c: m[1], h: m[2] === '///' ? null : +m[2] * 30.48, t: m[3] && m[3] !== '///' ? m[3] : null}); continue; }
+    if ((m = s.match(/^VV(\d{3}|\/\/\/)$/))) { o.vv = m[1] === '///' ? null : +m[1] * 30.48; continue; }
+    if (['NSC', 'NCD', 'SKC', 'CLR'].includes(s)) { o.sky = s; continue; }
+    if ((m = s.match(/^(M?\d{2})\/(M?\d{2})?$/))) { const n = (x) => x == null ? null : (x[0] === 'M' ? -1 : 1) * +x.replace('M', ''); o.temp = n(m[1]); o.dewp = n(m[2]); continue; }
+    if ((m = s.match(/^Q(\d{4})$/))) { o.qnh = +m[1]; continue; }
+    if ((m = s.match(/^A(\d{4})$/))) { o.qnh = Math.round(+m[1] / 100 * 33.8639); continue; }
+    if (/^WS/.test(s)) { o.ws = true; continue; }
+    if (/^R\d{2}[LCR]?\/(CLRD|\d{6}|\/{6})/.test(s) || /^R\/SNOCLO/.test(s)) continue; /* состояние ВПП */
+    if (s !== '' && (m = s.match(WXRE)) && (m[3] || m[4])) { (m[1] ? o.re : o.wx).push(s); continue; }
+  }
+  if (o.temp != null && o.dewp != null) {
+    const g = (x) => Math.exp(17.625 * x / (243.04 + x));
+    o.rh = Math.min(100, Math.round(100 * g(o.dewp) / g(o.temp)));
+  }
+  o.feel = feels(o);
+  return o;
+}
+function feels(o) {
+  const t = o.temp, v = (o.wspd || 0) * 3.6;
+  if (t == null) return null;
+  if (t <= 10 && v > 4.8) return 13.12 + 0.6215 * t - 11.37 * v ** 0.16 + 0.3965 * t * v ** 0.16;
+  if (t >= 27 && o.rh != null) {
+    const F = t * 9 / 5 + 32, R = o.rh;
+    const hi = -42.379 + 2.04901523 * F + 10.14333127 * R - 0.22475541 * F * R - 0.00683783 * F * F - 0.05481717 * R * R + 0.00122874 * F * F * R + 0.00085282 * F * R * R - 0.00000199 * F * F * R * R;
+    return (hi - 32) * 5 / 9;
+  }
+  return t;
+}
+function wxText(code) {
+  const w = tr().wxw, m = code.match(WXRE);
+  if (!m) return code;
+  const ph = (m[4] || '').match(/../g) || [];
+  const parts = [];
+  if (m[2] === '-' || m[2] === '+') parts.push(w[m[2]]);
+  if (m[3]) parts.push(w[m[3]]);
+  parts.push(ph.map((p) => w[p] || p).join(lang === 'ru' ? ' и ' : ' and '));
+  if (m[2] === 'VC') parts.push(w.VC);
+  let s = parts.filter(Boolean).join(' ');
+  if (m[1]) s = w.RE + ': ' + s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+const f0 = (v) => v == null || !isFinite(v) ? '—' : String(Math.round(v));
+const f1 = (v) => v == null || !isFinite(v) ? '—' : (Math.round(v * 10) / 10).toFixed(1);
+const dir16 = (d) => tr().dirs[Math.round(d / 22.5) % 16];
+const loc = (d) => new Date(+d + TZ);
+const hhmm = (d) => { const x = loc(d); return String(x.getUTCHours()).padStart(2, '0') + ':' + String(x.getUTCMinutes()).padStart(2, '0'); };
+const dm = (d) => { const x = loc(d); return String(x.getUTCDate()).padStart(2, '0') + '.' + String(x.getUTCMonth() + 1).padStart(2, '0'); };
+const visTxt = (v) => v == null ? '—' : v >= 10000 ? '10 ' + tr().km + ' ' + tr().more : v >= 5000 ? f0(v / 1000) + ' ' + tr().km : v >= 1000 ? f1(v / 1000) + ' ' + tr().km : f0(v) + ' ' + tr().m;
+const windTxt = (o) => {
+  if (o.wspd == null) return '—';
+  if (o.wspd === 0) return tr().calm;
+  let s = (o.vrb ? tr().vrb : dir16(o.wdir) + ' (' + o.wdir + '°)') + ', ' + f0(o.wspd) + ' ' + tr().ms;
+  if (o.wgst) s += ', ' + tr().gust + ' ' + f0(o.wgst);
+  return s;
+};
+const cloudTxt = (o) => {
+  if (o.cavok) return lang === 'ru' ? 'нет облаков ниже 1500 м и кучево-дождевых' : 'no cloud below 1500 m, no cumulonimbus';
+  const out = o.clouds.map((c) => tr().cover[c.c] + (c.h != null ? ' ' + f0(Math.round(c.h / 10) * 10) + ' ' + tr().m : '') + (c.t === 'CB' ? ', ' + tr().cb : c.t === 'TCU' ? ', ' + tr().tcu : ''));
+  if (o.vv != null || o.raw.includes('VV///')) out.push(tr().vv + ' ' + (o.vv != null ? f0(o.vv) + ' ' + tr().m : '—'));
+  if (!out.length) return o.sky === 'NSC' ? tr().nsc : o.sky ? tr().ncd : '—';
+  return out.join('; ');
+};
+
+/* ---------- Значки погоды ---------- */
+const ICON = {
+  sun: '<path d="M12 2.4v2.4M12 19.2v2.4M2.4 12h2.4M19.2 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M5.2 18.8l1.7-1.7M17.1 6.9l1.7-1.7" stroke="#f2c14e" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.6" fill="#f2c14e"/>',
+  moon: '<path d="M15.5 3.5a8.5 8.5 0 1 0 5 13.6A7 7 0 0 1 15.5 3.5z" fill="#d9dee4"/>',
+  part: '<path d="M9 1.6v2M2 8.6h2M4 3.6l1.4 1.4M14 3.6l-1.4 1.4" stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="9" cy="8.6" r="3.7" fill="#f2c14e"/><path d="M8.5 21h10a3.8 3.8 0 0 0 .5-7.57A5.4 5.4 0 0 0 8.6 12.5 4.25 4.25 0 0 0 8.5 21z" fill="#c3ccd5" stroke="#16222d" stroke-width="1.2"/>',
+  cloud: '<path d="M5 12.5h8.5a3.3 3.3 0 0 0 .3-6.6A4.6 4.6 0 0 0 5.2 5.2 3.7 3.7 0 0 0 5 12.5z" fill="#7d8b99"/><path d="M7 20h10.5a4.1 4.1 0 0 0 .5-8.17A5.8 5.8 0 0 0 7.1 10.8 4.6 4.6 0 0 0 7 20z" fill="#b6c1cc" stroke="#16222d" stroke-width="1.2"/>',
+  rain: '<path d="M6.5 14.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 5.1 4.7 4.7 0 0 0 6.5 14.5z" fill="#b6c1cc"/><path d="M8.2 17.2l-1.1 3.2M12.6 17.2l-1.1 3.2M17 17.2l-1.1 3.2" stroke="#5aa9f0" stroke-width="1.9" stroke-linecap="round" fill="none"/>',
+  snow: '<path d="M6.5 14.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 5.1 4.7 4.7 0 0 0 6.5 14.5z" fill="#b6c1cc"/><path d="M7.5 16.7v3.4M6 17.5l3 1.7M6 19.2l3-1.7M12 18.7v3.4M10.5 19.5l3 1.7M10.5 21.2l3-1.7M16.5 16.7v3.4M15 17.5l3 1.7M15 19.2l3-1.7" stroke="#e6f3fc" stroke-width="1.1" stroke-linecap="round" fill="none"/>',
+  fog: '<path d="M4 8h16M3 12h18M5 16h14M7 20h10" stroke="#b6c1cc" stroke-width="2" stroke-linecap="round" fill="none"/>',
+  ts: '<path d="M6.5 13.5h11a4.2 4.2 0 0 0 .6-8.36A6 6 0 0 0 6.6 4.1 4.7 4.7 0 0 0 6.5 13.5z" fill="#8d99a6"/><path d="M12.5 13l-2.5 4.5h3l-1.8 4.5 5-6h-3.2l1.8-3z" fill="#f2c14e"/>',
+  dust: '<path d="M3 9c3-2 6 2 9 0s6-2 9 0M3 14c3-2 6 2 9 0s6-2 9 0M5 19c3-2 5 1 7 0" stroke="#d8b878" stroke-width="2" stroke-linecap="round" fill="none"/>'};
+function iconFor(o) {
+  const w = o.wx.join(' ');
+  if (/TS/.test(w)) return 'ts';
+  if (/SN|SG|PL|GS|GR/.test(w)) return 'snow';
+  if (/RA|DZ|UP/.test(w)) return 'rain';
+  if (/FG|BR|HZ|FU/.test(w)) return 'fog';
+  if (/DU|SA|DS|SS|PO/.test(w)) return 'dust';
+  const top = o.clouds.reduce((a, c) => Math.max(a, {FEW: 1, SCT: 2, BKN: 3, OVC: 4}[c.c]), 0);
+  if (top >= 3 || o.vv != null) return 'cloud';
+  const h = loc(o.t).getUTCHours(), night = h < 7 || h >= 18;
+  if (top >= 1) return night ? 'cloud' : 'part';
+  return night ? 'moon' : 'sun';
+}
+const arrow = (deg, size, color) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${deg + 180}deg)"><path d="M12 3l5 9h-3.5v9h-3v-9H7z" fill="${color || 'currentColor'}"/></svg>`;
+
+/* ---------- Отрисовка ---------- */
+let OBS = [], META = {}, ERR = null;
+function render() {
+  document.documentElement.classList.toggle('en', lang === 'en');
+  document.documentElement.lang = lang;
+  for (const b of document.querySelectorAll('[data-lang]')) b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+  const L = tr();
+  if (!OBS.length) { $('meta').innerHTML = '<span class="err">' + esc(ERR ? L.loadErr : '…') + '</span>'; return; }
+  const o = OBS[OBS.length - 1];
+  const age = Math.max(0, Math.round((Date.now() - o.t) / 60000));
+  $('meta').innerHTML = esc(L.obs + ' ' + dm(o.t) + ' ' + hhmm(o.t) + ' (' + L.ago(age) + ') · UZTT · ' + L.upd + ' ' + (META.updated ? hhmm(new Date(META.updated)) : '—'))
+    + (age > 75 ? '<span class="pill stale">' + esc(L.stale) + '</span>' : '') + (ERR ? ' <span class="err">· ' + esc(L.loadErr) + '</span>' : '');
+  $('ico').innerHTML = ICON[iconFor(o)];
+  $('temp').innerHTML = esc(f0(o.temp)) + '<small> °C</small>';
+  $('wx').textContent = o.wx.length ? o.wx.map(wxText).join(', ') : (o.cavok ? L.cavok : L.clear);
+  $('feel').textContent = o.feel != null && Math.round(o.feel) !== o.temp ? L.feel + ' ' + f0(o.feel) + ' °C' : '';
+  const old = OBS.filter((x) => +x.t <= +o.t - 3 * 3600e3 + 60e3).pop();
+  const dl = (a, b, f) => a != null && b != null ? (a - b > 0 ? '+' : '') + f(a - b) : null;
+  const tiles = [];
+  const wv = o.wvar ? (L.from + ' ' + o.wvar[0] + '° ' + L.to + ' ' + o.wvar[1] + '°') : '';
+  tiles.push([L.wind, (o.wspd && !o.vrb ? arrow(o.wdir, 22, 'var(--acc)') : '') + esc(o.wspd === 0 ? L.calm : f0(o.wspd)) + (o.wspd ? '<small>' + L.ms + '</small>' : ''),
+    o.wspd ? (o.vrb ? L.vrb : dir16(o.wdir) + ' ' + o.wdir + '°') + (o.wgst ? ', ' + L.gust + ' ' + f0(o.wgst) + ' ' + L.ms : '') + (wv ? '; ' + wv : '') : '']);
+  tiles.push([L.vis, esc(o.vis == null ? '—' : o.vis >= 10000 ? '≥ 10' : o.vis >= 1000 ? f1(o.vis / 1000) : f0(o.vis)) + '<small>' + (o.vis != null && o.vis < 1000 ? L.m : L.km) + '</small>', o.visMin ? L.less + ' ' + visTxt(o.visMin) : '']);
+  tiles.push([L.cloud, esc(o.cavok ? 'CAVOK' : o.clouds.length ? o.clouds.map((c) => c.c).join(' ') : o.vv != null || o.raw.includes('VV') ? 'VV' : o.sky || '—'), cloudTxt(o)]);
+  const dq = dl(o.qnh, old && old.qnh, f0);
+  tiles.push([L.press, esc(f0(o.qnh)) + '<small>' + L.hpa + '</small>', dq != null ? dq + ' ' + L.hpa + ' ' + L.delta : '']);
+  tiles.push([L.rh, esc(f0(o.rh)) + '<small>%</small>', '']);
+  const dt = dl(o.temp, old && old.temp, f0);
+  tiles.push([L.td, esc(f0(o.dewp)) + '<small>°C</small>', dt != null ? 'T ' + dt + ' °C ' + L.delta : '']);
+  for (const r of o.rvr) {
+    const v = (x) => x ? (x[0] === 'P' ? '> ' : x[0] === 'M' ? '< ' : '') + +x.replace(/[PM]/, '') : '';
+    tiles.push([L.rvr + ' ' + r.rwy, esc(v(r.v) + (r.v2 ? '–' + v(r.v2) : '')) + '<small>' + L.m + '</small>', r.tend ? L.rvrT[r.tend] : '']);
+  }
+  $('tiles').innerHTML = tiles.map(([k, v, x]) => `<div class="tile"><span class="k">${esc(k)}</span><span class="v">${v}</span>${x ? `<span class="x">${esc(x)}</span>` : ''}</div>`).join('');
+  $('raw').textContent = o.raw;
+  const trd = [];
+  if (o.trend) {
+    const tw = o.trend.split(' ');
+    if (tw[0] === 'NOSIG') trd.push(L.trend.NOSIG);
+    else trd.push((L.trend[tw[0]] || '') + ' ' + o.trend.slice(tw[0].length).trim());
+  }
+  if (o.re.length) trd.push(o.re.map(wxText).join(', '));
+  $('trend').hidden = !trd.length; $('trend').textContent = trd.join(' ');
+  const last24 = OBS.filter((x) => +x.t >= +o.t - 24 * 3600e3);
+  charts(last24);
+  $('tbl').innerHTML = last24.slice().reverse().map((x) => `<tr><td class="l">${esc(dm(x.t) + ' ' + hhmm(x.t))}</td><td>${esc(f0(x.temp))}</td><td>${esc(f0(x.dewp))}</td><td>${esc(f0(x.rh))}</td>
+    <td class="l">${esc(windTxt(x))}</td><td>${esc(x.vis == null ? '—' : x.vis >= 10000 ? '≥10' : f1(x.vis / 1000))}</td><td>${esc(f0(x.qnh))}</td>
+    <td class="l">${esc([x.wx.map(wxText).join(', '), cloudTxt(x)].filter((s) => s && s !== '—').join('; '))}</td><td class="raw-c">${esc(x.raw)}</td></tr>`).join('');
+}
+
+/* Линейный график: series [{color, pts:[{t,y}], dash, right}], стрелки ветра, подсказка */
+const charts = (rows) => {
+  const L = tr(), X = (r) => r.t;
+  line($('c-t'), rows, [{k: 'temp', color: 'var(--main)', lab: 'T', u: '°C'}, {k: 'dewp', color: 'var(--td)', lab: 'Td', u: '°C'}], {});
+  line($('c-w'), rows, [{k: 'wspd', color: 'var(--main)', lab: L.wind, u: L.ms, f: f1}, {k: 'wgst', color: 'var(--gust)', lab: L.gust, u: L.ms, f: f1, dots: true}], {zero: true, arrows: true});
+  line($('c-p'), rows, [{k: 'qnh', color: 'var(--main)', lab: 'QNH', u: L.hpa}], {});
+  line($('c-v'), rows, [{k: 'visk', color: 'var(--main)', lab: L.vis, u: L.km, f: f1}, {k: 'rh', color: 'var(--td)', lab: L.rh, u: '%', right: true}], {zero: true, yMax: 10});
+};
+function nice(lo, hi, n) {
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const step0 = (hi - lo) / n, p = 10 ** Math.floor(Math.log10(step0)), e = step0 / p;
+  const step = (e >= 5 ? 10 : e >= 2 ? 5 : e >= 1 ? 2 : 1) * p;
+  return {lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step};
+}
+const charts_obs = new Map();
+function line(el, rows, series, opt) {
+  const draw = () => {
+    const W = el.clientWidth, H = el.clientHeight;
+    if (!W || !rows.length) { el.innerHTML = ''; return; }
+    for (const r of rows) r.visk = r.vis == null ? null : Math.min(10, r.vis / 1000);
+    const left = series.filter((s) => !s.right), right = series.filter((s) => s.right);
+    const vals = left.flatMap((s) => rows.map((r) => r[s.k]).filter((v) => v != null && isFinite(v)));
+    if (!vals.length) { el.innerHTML = ''; return; }
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    if (opt.zero) lo = Math.min(0, lo);
+    if (opt.yMax) hi = Math.max(hi, opt.yMax);
+    const sc = nice(lo, hi, W < 520 ? 3 : 4);
+    const m = {t: 10, r: right.length ? 36 : 10, b: opt.arrows ? 40 : 22, l: 34};
+    const t0 = +rows[0].t, t1 = Math.max(+rows[rows.length - 1].t, t0 + 3600e3);
+    const x = (t) => m.l + (t - t0) / (t1 - t0) * (W - m.l - m.r);
+    const y = (v) => H - m.b - (v - sc.lo) / (sc.hi - sc.lo) * (H - m.t - m.b);
+    const yr = (v) => H - m.b - v / 100 * (H - m.t - m.b);
+    let s = '';
+    for (let v = sc.lo; v <= sc.hi + 1e-9; v += sc.step) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${+v.toFixed(2)}</text>`;
+    if (right.length) for (const v of [0, 50, 100]) s += `<text x="${W - m.r + 6}" y="${yr(v) + 4}">${v}</text>`;
+    const stepH = (t1 - t0) / 3600e3 > 12 ? (W < 520 ? 6 : 3) : 1;
+    const first = Math.ceil((t0 + TZ) / 3600e3 / stepH) * stepH * 3600e3 - TZ;
+    for (let t = first; t <= t1; t += stepH * 3600e3) {
+      const h = loc(t).getUTCHours();
+      s += `<line x1="${x(t)}" x2="${x(t)}" y1="${H - m.b}" y2="${H - m.b + 4}" stroke="var(--axis)"/><text x="${x(t)}" y="${H - m.b + 15}" text-anchor="middle">${h === 0 ? dm(t) : String(h).padStart(2, '0') + ':00'}</text>`;
+    }
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
+    for (const se of series) {
+      const Y = se.right ? yr : y;
+      let d = '', pen = false;
+      for (const r of rows) { const v = r[se.k]; if (v == null || !isFinite(v)) { pen = false; continue; } d += (pen ? 'L' : 'M') + x(+r.t).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; }
+      if (!se.dots) s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round"/>`;
+      s += rows.filter((r) => r[se.k] != null).map((r) => `<circle cx="${x(+r.t)}" cy="${Y(r[se.k])}" r="${se.dots ? 3 : 1.6}" fill="${se.color}"/>`).join('');
+    }
+    if (opt.arrows) {
+      const every = Math.max(1, Math.ceil(rows.length * 18 / (W - m.l - m.r)));
+      rows.forEach((r, i) => {
+        if (i % every || r.wspd == null) return;
+        const cx = x(+r.t), cy = H - 10;
+        if (r.wspd === 0) s += `<circle cx="${cx}" cy="${cy}" r="3" fill="none" stroke="var(--mut)"/>`;
+        else if (r.vrb || r.wdir == null) s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle">~</text>`;
+        else s += `<g transform="translate(${cx} ${cy}) rotate(${r.wdir + 180})"><path d="M0 -7l4 8h-3v6h-2v-6h-3z" fill="var(--acc)"/></g>`;
+      });
+    }
+    s += `<line class="rule" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" visibility="hidden"/><rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/>`;
+    el.innerHTML = `<svg role="img">${s}</svg><div class="tip" hidden></div>`;
+    const svg = el.firstChild, tip = el.lastChild, rule = svg.querySelector('.rule');
+    svg.querySelector('.hit').addEventListener('pointermove', (ev) => {
+      const px = ev.clientX - svg.getBoundingClientRect().left;
+      let best = rows[0];
+      for (const r of rows) if (Math.abs(x(+r.t) - px) < Math.abs(x(+best.t) - px)) best = r;
+      const cx = x(+best.t);
+      rule.setAttribute('x1', cx); rule.setAttribute('x2', cx); rule.setAttribute('visibility', 'visible');
+      tip.innerHTML = `<b>${esc(dm(best.t) + ' ' + hhmm(best.t))}</b>` + series.map((se) => `<div><span style="color:${se.color}">${esc(se.lab)}:</span> ${esc(best[se.k] == null ? '—' : (se.f || f0)(best[se.k]) + ' ' + se.u)}</div>`).join('')
+        + (opt.arrows ? `<div class="m">${esc(windTxt(best))}</div>` : '');
+      tip.hidden = false;
+      const tw = tip.offsetWidth;
+      tip.style.left = (cx + 12 + tw > W ? cx - tw - 12 : cx + 12) + 'px'; tip.style.top = m.t + 'px';
+    });
+    svg.querySelector('.hit').addEventListener('pointerleave', () => { tip.hidden = true; rule.setAttribute('visibility', 'hidden'); });
+  };
+  draw();
+  if (!charts_obs.has(el)) { const ro = new ResizeObserver(() => charts_obs.get(el)()); ro.observe(el); }
+  charts_obs.set(el, draw);
+}
+
+/* ---------- Загрузка ---------- */
+function apply(js) {
+  META = js || {};
+  OBS = (META.obs || []).map((r) => parse(r.raw, r.t)).filter((o) => !isNaN(o.t)).sort((a, b) => a.t - b.t);
+}
+async function load() {
+  try {
+    if (window.__METAR_SRC) apply(window.__METAR_SRC);
+    else {
+      const r = await fetch('data.json?_=' + Math.floor(Date.now() / 60000), {cache: 'no-store'});
+      if (!r.ok) throw new Error(r.status);
+      apply(await r.json());
+    }
+    ERR = null;
+  } catch (e) { ERR = e; }
+  render();
+}
+for (const b of document.querySelectorAll('[data-lang]')) b.addEventListener('click', () => {
+  lang = b.dataset.lang;
+  try { const u = new URL(location.href); u.searchParams.set('lang', lang); history.replaceState(null, '', u); } catch (e) {}
+  render();
+});
+$('copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('raw').textContent); const b = $('copy'), h = b.innerHTML; b.textContent = tr().copied; setTimeout(() => { b.innerHTML = h; }, 1500); } catch (e) {}
+});
+load();
+setInterval(load, 5 * 60e3);
+setInterval(render, 60e3);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+}
+</script>
+</body>
+</html>
