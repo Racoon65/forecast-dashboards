@@ -58,7 +58,7 @@ jobs:
 
           new = []
           try:
-              js = json.loads(get(f"https://aviationweather.gov/api/data/metar?ids={st}&hours=6&format=json"))
+              js = json.loads(get(f"https://aviationweather.gov/api/data/metar?ids={st}&hours=30&format=json"))
               for o in js:
                   raw = (o.get("rawOb") or "").strip()
                   t = o.get("reportTime")
